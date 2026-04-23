@@ -44,7 +44,10 @@ public class Pedido implements Serializable{
     @JoinColumn(name = "cliente_id", nullable = false)
     private Usuario cliente;
 
-    // Relacionamento com os itens (Onde estão os produtos)
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL)
     private List<ItemPedido> itens;
+
+    @ManyToOne
+    @JoinColumn(name = "comanda_id")
+    private Comanda comanda;
 }
