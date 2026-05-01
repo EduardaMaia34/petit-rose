@@ -1,1 +1,15 @@
-services: {}
+services:
+  db:
+    image: postgres:alpine
+    container_name: petitrose-db
+    environment:
+      - POSTGRES_DB=petitrose_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=confeitaria
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
