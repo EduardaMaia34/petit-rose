@@ -28,8 +28,8 @@ public class SecurityConfigurations {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         // Permite login e cadastro publicamente
-                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/usuarios/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/usuarios/register").permitAll()
                         // Exemplo: Bloqueia rotas específicas para gerentes/admins
                         // .requestMatchers(HttpMethod.POST, "/produtos").hasRole("ADMIN")
                         .anyRequest().authenticated()

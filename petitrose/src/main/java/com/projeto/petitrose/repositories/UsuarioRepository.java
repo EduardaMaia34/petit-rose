@@ -10,4 +10,5 @@ import com.projeto.petitrose.models.Usuario;
 public interface UsuarioRepository extends JpaRepository<Usuario, UUID>{
     
     UserDetails findByEmail(String email);
+    boolean existsByEmail(String email);
 }
