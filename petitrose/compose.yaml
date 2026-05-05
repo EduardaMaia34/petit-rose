@@ -11,5 +11,28 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  # Adicione o Backend
+  backend:
+    build: ./petitrose
+    container_name: petitrose-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/petitrose_db
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=confeitaria
+
+  # Adicione o Frontend
+  frontend:
+    build: ./frontend   # Caminho para a pasta onde está o seu React
+    container_name: petitrose-web
+    ports:
+      - "3000:3000"
+    stdin_open: true
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
