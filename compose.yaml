@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   db:
     image: postgres:alpine
@@ -9,9 +11,10 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - petitrose-network
 
-  # Adicione o Backend
   backend:
     build: ./petitrose
     container_name: petitrose-api
@@ -20,19 +23,23 @@ services:
     depends_on:
       - db
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/petitrose_db
-      - SPRING_DATASOURCE_USERNAME=admin
-      - SPRING_DATASOURCE_PASSWORD=confeitaria
+      - DB_HOST=db
+      - JWT_SECRET=petitrose-secret-key-123
+    networks:
+      - petitrose-network
 
-  # Adicione o Frontend
   frontend:
-    build: ./frontend   # Caminho para a pasta onde está o seu React
+    build: ./frontend
     container_name: petitrose-web
     ports:
       - "3000:3000"
-    stdin_open: true
     depends_on:
       - backend
+    networks:
+      - petitrose-network
 
 volumes:
   postgres_data:
+
+networks:
+  petitrose-network:
