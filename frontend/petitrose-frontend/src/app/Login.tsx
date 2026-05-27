@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // 1. Importado o hook de navegação
 import Swal from 'sweetalert2';
 import axios from 'axios';
 import '../index.css';
@@ -7,12 +8,12 @@ import logoPetitRose from '../assets/Logo.png';
 export const Login = () => {
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
+    const navigate = useNavigate(); // 2. Inicializado o navigate
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
 
         try {
-            // ALINHADO: O objeto agora envia 'email' e 'senha' como no seu Insomnia
             const response = await axios.post('http://localhost:8081/usuarios/login', {
                 email: email,
                 senha: senha
@@ -27,6 +28,9 @@ export const Login = () => {
                     text: 'Login realizado com sucesso!',
                     icon: 'success',
                     confirmButtonColor: '#600000'
+                }).then(() => {
+                    // 3. Redireciona para o menu cliente assim que o usuário clica em "OK"
+                    navigate('/menu-cliente');
                 });
             }
         } catch (error: any) {

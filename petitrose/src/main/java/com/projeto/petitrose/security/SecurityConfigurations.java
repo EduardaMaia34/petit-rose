@@ -29,13 +29,21 @@ public class SecurityConfigurations {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
-                .cors(Customizer.withDefaults())
+                // 1. Aplica as configurações do Bean corsConfigurationSource()
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // Suas rotas públicas já configuradas
                         .requestMatchers(HttpMethod.POST, "/usuarios/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/usuarios/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/produtos/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/produtos/novo").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/produtos/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/produtos/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/produtos/**").permitAll()
 
                         .anyRequest().authenticated()
                 )

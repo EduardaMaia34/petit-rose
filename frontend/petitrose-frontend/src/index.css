@@ -101,10 +101,10 @@ input[type="number"],
 
 .logo-img {
     position: absolute;
-    width: 220px;
-    height: 220px;
-    top: 80px;
-    left: -10px;
+    width: 180px;
+    height: 180px;
+    top: 90px;
+    left: 10px;
     object-fit: fill;
     z-index: 4;
     border-radius: 100px;
@@ -213,4 +213,511 @@ input[type="number"],
     justify-content: space-between;
     align-items: center;
     margin-top: 20px;
+}
+
+
+/* ==========================================================================
+   CONTEÚDO ADICIONAL: CLASSES PARA OS MENUS (CORRIGINDO O PREENCHIMENTO DA TELA)
+   ========================================================================== */
+
+.dashboard-page {
+    /* ESSENCIAIS: Anula a centralização do body e força o preenchimento total */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    background-color: #fff8e6; /* Cor de fundo creme original do seu painel */
+    color: #6e0707;
+    font-family: 'Georgia', 'Abhaya Libre', serif;
+}
+
+/* Botões específicos do painel */
+.dashboard-page .btn {
+    background-color: #fcb1b0;
+    color: #6e0707;
+    border: none;
+    border-radius: 15px;
+    padding: 12px 30px;
+    margin: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.dashboard-page .btn:hover {
+    background-color: #fca0a0;
+}
+
+/* Estrutura do Menu Admin (Welcome Page) */
+.dashboard-page .welcome-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #fbbfc5; /* Fundo rosado da welcome page */
+    width: 100%;
+}
+
+.dashboard-page .border-externa {
+    border: 3px solid #6e0707;
+    padding: 10px;
+    border-radius: 25px;
+    background-color: #fbbfc5;
+}
+
+.dashboard-page .container {
+    background-color: #fff8e6;
+    border: 2px dashed #6e0707;
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-page .logo {
+    width: 120px;
+    margin-bottom: 20px;
+}
+
+.dashboard-page h1 {
+    font-family: 'Abhaya Libre', serif;
+    font-size: 24px;
+    margin-bottom: 30px;
+    color: #6e0707;
+}
+
+.dashboard-page .container .btn {
+    display: block;
+    width: 100%;
+    margin: 15px 0;
+}
+
+.dashboard-page .footer {
+    font-size: 14px;
+    margin-top: 30px;
+    font-style: italic;
+}
+
+/* Componentes da Navbar do Menu Cliente */
+.dashboard-page .navbar {
+    width: calc(100% - 40px);
+    max-width: 1300px;
+    margin: 20px 10px 0 10px;
+    background-color: #fcb1b0;
+    padding: 4px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    z-index: 1000;
+    box-sizing: border-box;
+}
+
+.dashboard-page .navbar-logo {
+    height: 50px;
+    border-radius: 12px;
+}
+
+.dashboard-page .navbar-menu {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.dashboard-page .navbar-menu a {
+    text-decoration: none;
+    color: #710100;
+    font-size: 18px;
+    padding: 6px 12px;
+    border-radius: 12px;
+    transition: background-color 0.3s ease;
+}
+
+.dashboard-page .navbar-menu a:hover {
+    background-color: #ffdeeb;
+}
+
+.dashboard-page .navbar-menu .ativo {
+    background-color: #fffbe6;
+    font-weight: bold;
+}
+
+/* Grid e Blocos do Painel do Cliente */
+.dashboard-page .main-container {
+    background-color: #fffaf0;
+    border-radius: 20px;
+    box-shadow: 0 0 5px #fcb1b0;
+    border-top: 1px solid #ffd7c9;
+    border-right: 4px solid #ffd7c9;
+    border-bottom: 4px solid #ffd7c9;
+    border-left: 1px solid #ffd7c9;
+    padding: 30px 40px;
+    margin: 30px 10px 40px 10px;
+    width: calc(100% - 20px);
+    max-width: 1200px;
+    box-sizing: border-box;
+}
+
+.dashboard-page .content-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 30px;
+}
+
+.dashboard-page .report-container,
+.dashboard-page .orders-container {
+    background-color: #fff8e6;
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+}
+
+.dashboard-page .container-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    color: #600000;
+}
+
+.dashboard-page .container-header h2 {
+    margin: 0;
+    font-size: 28px;
+    color: #600000;
+}
+
+.dashboard-page .container-header p {
+    margin: 5px 0 0 0;
+    font-size: 14px;
+    color: #8b0000;
+}
+
+.dashboard-page .btn-novo {
+    background-color: #600000;
+    color: #fff8e6;
+    padding: 12px 24px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.dashboard-page .btn-novo:hover {
+    background-color: #8b0000;
+}
+
+.dashboard-page .pedidos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 30px;
+    grid-auto-flow: dense;
+    padding-top: 20px;
+}
+
+.dashboard-page .pedido-card {
+    background-color: #fffaf0;
+    border: 2px solid #fbbfc5;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 2px 6px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease-in-out;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.dashboard-page .pedido-card:hover {
+    transform: translateY(-5px);
+}
+
+.dashboard-page .pedido-card .pedido-meta {
+    font-size: 14px;
+    color: #8b0000;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed #ffd7c9;
+}
+
+.dashboard-page .pedido-card .pedido-meta p {
+    margin: 0;
+}
+
+.dashboard-page .pedido-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 15px 0;
+}
+
+.dashboard-page .pedido-card ul li {
+    margin-bottom: 5px;
+    color: #710100;
+    font-size: 16px;
+}
+
+.dashboard-page .observacoes {
+    font-size: 14px;
+    color: #8b0000;
+    margin-top: 10px;
+}
+
+.dashboard-page .status-area {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 15px;
+}
+
+.dashboard-page .status-btn-em-preparo {
+    color: #600000;
+    background-color: #fbbfc5;
+    padding: 9px 16px;
+    border-radius: 10px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.dashboard-page .status-btn-em-preparo:hover {
+    background-color: #8b0000;
+    color: #fff8e6;
+}
+
+.dashboard-page .status-btn-pagamento {
+    color: #fff8e6;
+    background-color: #710100;
+    padding: 9px 16px;
+    border-radius: 10px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.dashboard-page .status-btn-pagamento:hover {
+    background-color: #500000;
+}
+
+.dashboard-page .modalidade-retirada {
+    background-color: #f5d2d6;
+    color: #600000;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.dashboard-page .modalidade-loja {
+    background-color: #f3ebda;
+    color: #600000;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.dashboard-page .stats-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    text-align: center;
+    margin-top: 25px;
+}
+
+.dashboard-page .stat-box {
+    background-color: #fff8e6;
+    border-radius: 10px;
+    padding: 15px 25px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    min-width: 150px;
+    margin: 10px 0;
+}
+
+.dashboard-page .stat-box h3 {
+    margin: 0 0 5px 0;
+    color: #600000;
+    font-size: 18px;
+}
+
+.dashboard-page .stat-box p {
+    margin: 0;
+    font-size: 24px;
+    font-weight: bold;
+    color: #8b0000;
+}
+
+/* Responsividade dos painéis */
+@media (max-width: 900px) {
+    .dashboard-page .content-wrapper {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-page .navbar-menu {
+        display: none;
+        flex-direction: column;
+        width: calc(100% - 20px);
+        gap: 10px;
+        position: absolute;
+        top: 70px;
+        right: 10px;
+        background-color: #fcb1b0;
+        border-radius: 10px;
+        padding: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        z-index: 100;
+    }
+    .dashboard-page .navbar-menu.show {
+        display: flex;
+    }
+    .dashboard-page .menu-icon {
+        display: block;
+    }
+    .dashboard-page .main-container {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 550px) {
+    .dashboard-page .pedidos-grid {
+        grid-template-columns: 1fr;
+    }
+    .dashboard-page .container-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .dashboard-page .btn-novo {
+        width: 100%;
+        margin-top: 15px;
+        text-align: center;
+    }
+}
+
+/* ==========================================
+   ESTILOS COMPLEMENTARES - PÁGINAS DE PRODUTOS
+   ========================================== */
+
+/* Containers de Formulário */
+.form-produto-container {
+    max-width: 700px;
+    margin: 30px auto;
+    padding: 30px 40px;
+    background-color: #fffaf0;
+    border-radius: var(--radius-m);
+    box-shadow: var(--shadow);
+}
+
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 8px;
+    color: var(--vinho-texto);
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--rosa-escuro);
+    border-radius: var(--radius-p);
+    background-color: #fff;
+    font-family: inherit;
+    color: var(--vinho-texto);
+    font-size: 14px;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--rosa-hover);
+    box-shadow: 0 0 5px rgba(252, 177, 176, 0.5);
+}
+
+/* Listagem de Produtos e Tabelas */
+.produtos-table-container {
+    width: 100%;
+    background-color: var(--bg-creme);
+    border-radius: var(--radius-m);
+    padding: 25px;
+    box-shadow: var(--shadow);
+    margin-top: 20px;
+}
+
+.produtos-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.produtos-table th {
+    background-color: var(--rosa-principal);
+    color: var(--vinho-texto);
+    font-weight: bold;
+    padding: 12px;
+    text-align: left;
+    border-bottom: 2px solid var(--rosa-escuro);
+}
+
+.produtos-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--rosa-escuro);
+    color: var(--vinho-texto);
+    vertical-align: middle;
+}
+
+.produtos-table tr:hover {
+    background-color: rgba(251, 191, 197, 0.2);
+}
+
+/* Botões específicos de Ação */
+.btn-acoes {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-editar {
+    background-color: #f0ad4e;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: var(--radius-p);
+    cursor: pointer;
+}
+
+.btn-deletar {
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: var(--radius-p);
+    cursor: pointer;
+}
+
+.btn-voltar {
+    background-color: #6c757d;
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: var(--radius-p);
+    display: inline-block;
+    text-align: center;
 }
