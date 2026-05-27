@@ -1,38 +1,126 @@
-.App {
-  text-align: center;
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+body {
+    background-color: #fbbfc5;
+    font-family: 'Georgia', serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+
+.outer-box {
+    background-color: #ffffe3; /* Creme */
+    padding: 12px;
+    border-radius: 40px;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+.middle-box {
+    background-color: #fbbfc5; /* Rosa */
+    padding: 12px;
+    border-radius: 35px;
 }
 
-.App-link {
-  color: #61dafb;
+.container {
+    background-color: #ffffe3; /* Creme interno */
+    width: 450px;
+    padding: 80px 50px 50px 50px;
+    border-radius: 30px;
+    text-align: center;
+    position: relative;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Componente de Logo Circular */
+.logo-circle {
+    position: absolute;
+    top: -70px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 140px;
+    height: 140px;
+    background-color: #ffffe3;
+    border: 8px solid #fbbfc5;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-circle span {
+    color: #6e0000;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+/* Tipografia e Títulos */
+.title {
+    color: #6e0000;
+    font-size: 18px;
+    margin-bottom: 25px;
+    letter-spacing: 1px;
+}
+
+/* Formulários e Inputs */
+.input-group {
+    margin-bottom: 20px;
+}
+
+input {
+    width: 100%;
+    padding: 15px 20px;
+    border: 2px solid #f7aab0;
+    border-radius: 30px;
+    font-family: 'Georgia', serif;
+    font-size: 16px;
+    background-color: #f7aab0;
+    outline: none;
+}
+
+input::placeholder {
+    color: #6e0000;
+}
+
+/* Botões Reutilizáveis */
+.btn-submit {
+    width: 100%;
+    padding: 15px;
+    background-color: #f7aab0;
+    border: none;
+    border-radius: 30px;
+    color: #6e0000;
+    font-family: 'Georgia', serif;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-submit:hover {
+    background-color: #f57f89;
+    transform: translateY(-2px);
+}
+
+/* Links de Navegação */
+.link-area, .back-link-container {
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+.link-area a, .back-link {
+    color: #f57f89;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    display: inline-block;
+}
+
+.link-area a:hover, .back-link:hover {
+    text-decoration: underline;
 }
