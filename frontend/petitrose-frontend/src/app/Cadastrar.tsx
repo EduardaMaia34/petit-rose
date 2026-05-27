@@ -15,7 +15,6 @@ export const Cadastro = () => {
         e.preventDefault();
 
         try {
-            // ALINHADO: Enviando exatamente os campos do seu teste de Insomnia
             const response = await axios.post('http://localhost:8081/usuarios/register', {
                 nome: nome,
                 email: email,
@@ -48,7 +47,7 @@ export const Cadastro = () => {
                     <div className="logo-wrapper">
                         <img src={logoPetitRose} className="logo-img" alt="Logo Petit Rose" />
                     </div>
-                    <h2 style={{marginTop: '100px', color: '#600000'}}>CADASTRAR</h2>
+                    <h2 style={{marginTop: '100px', color: '#600000'}}>CADASTRAR USUÁRIO</h2>
                     <form className="login-form" style={{marginTop: '20px'}} onSubmit={handleCadastro}>
                         <div className="input-group">
                             <input
