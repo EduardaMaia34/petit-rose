@@ -25,19 +25,36 @@ public class SecurityFilter extends OncePerRequestFilter {
     private UsuarioRepository usuarioRepository;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+
+        String path = request.getServletPath();
+
+        // 2. IGNORA ROTAS PÚBLICAS DA API DE USUÁRIOS E PRODUTOS
+        return path.equals("/usuarios/login")
+                || path.equals("/usuarios/register")
+                || path.startsWith("/produtos");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        
+
         var token = recuperarToken(request);
         if (token != null) {
             var email = tokenService.validarToken(token);
-            UserDetails usuario = usuarioRepository.findByEmail(email);
+            if (email != null && !email.isEmpty()) {
+                UserDetails usuario = usuarioRepository.findByEmail(email);
 
-            if (usuario != null) {
-                var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                if (usuario != null) {
+                    var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             }
         }
+
         filterChain.doFilter(request, response);
     }
 
