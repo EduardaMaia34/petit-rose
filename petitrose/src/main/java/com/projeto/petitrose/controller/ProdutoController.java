@@ -1,4 +1,7 @@
-package com.projeto.petitrose.controller;
+// !! CLASSE NÃO UTILIZADA - PERMANECE APENAS PARA REFERÊNCIA !!
+// CÓDIGO REINTEGRADO NA CLASSE PRODUTO
+
+/*package com.projeto.petitrose.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,3 +48,4 @@ public class ProdutoController {
         }
     }
 }
+*/
