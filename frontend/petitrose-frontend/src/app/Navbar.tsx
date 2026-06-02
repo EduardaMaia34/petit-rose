@@ -33,7 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({ abaAtiva }) => {
         <div className="navbar">
             <img src={logoBarraPetitRose} alt="Logo Petit Rose" className="navbar-logo" onClick={() => navigate('/dashboard')} style={{cursor: 'pointer'}} />
             <div className="navbar-menu">
-                <button onClick={() => navigate('/dashboard')} className={abaAtiva === 'inicio' ? 'ativo' : ''} style={{ background: 'none', border: 'none', font: 'inherit', cursor: 'pointer' }}>Início</button>
+                <button onClick={() => navigate('/menu-cliente')} className={abaAtiva === 'inicio' ? 'ativo' : ''} style={{ background: 'none', border: 'none', font: 'inherit', cursor: 'pointer' }}>Início</button>
                 <button onClick={() => navigate('/produtos')} className={abaAtiva === 'produtos' ? 'ativo' : ''} style={{ background: 'none', border: 'none', font: 'inherit', cursor: 'pointer' }}>Produtos</button>
                 <button style={{ background: 'none', border: 'none', font: 'inherit', cursor: 'not-allowed', opacity: 0.6 }} disabled>Pedidos</button>
                 <button style={{ background: 'none', border: 'none', font: 'inherit', cursor: 'not-allowed', opacity: 0.6 }} disabled>Clientes</button>
