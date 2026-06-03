@@ -40,6 +40,7 @@ public class ProdutoController {
             Path caminhoCompleto = caminhoDiretorio.resolve(nomeArquivoUnico);
             Files.copy(arquivo.getInputStream(), caminhoCompleto);
 
+            // Retorna um JSON com o nome do arquivo para o React
             Map<String, String> resposta = new HashMap<>();
             resposta.put("nomeArquivo", nomeArquivoUnico);
             resposta.put("url", "http://localhost:8080/uploads/" + nomeArquivoUnico);
