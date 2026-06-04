@@ -12,6 +12,6 @@ import java.util.UUID;
 public interface ComandaRepository extends JpaRepository<Comanda, UUID> {
 
     Optional<Comanda> findById(UUID id);
-    List<Comanda> findByAberta();
+    List<Comanda> findByAberta(Boolean status);
 
 }
