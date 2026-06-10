@@ -30,7 +30,7 @@ public class Usuario implements Serializable, UserDetails {
     @Column(nullable=false, length = 100)
     private String nome;
 
-    @Column(nullable=false, unique=true)
+    @Column(nullable=false, unique=true, name="username")
     private String user; // Seu campo de login (username)
 
     @Column(nullable=false)

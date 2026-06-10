@@ -21,32 +21,48 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/produtos")
+@CrossOrigin(origins = "*") // Garante que o React consiga acessar sem problemas de CORS
 public class ProdutoController {
 
     @Autowired
     private ProdutoService service;
 
+    // Modificado para usar o caminho relativo seguro baseado na raiz do projeto
     private final String DIRETORIO_UPLOAD = "uploads/";
 
     @PostMapping("/upload")
-    public ResponseEntity<Map<String, String>> uploadImagem(@RequestParam("imagem") MultipartFile arquivo) {
+    public ResponseEntity<?> uploadImagem(@RequestParam("imagem") MultipartFile arquivo) {
+        // Validação preventiva: Se o arquivo veio vazio, mata a requisição com 400 antes de travar
+        if (arquivo == null || arquivo.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Erro: O arquivo enviado está vazio.");
+        }
+
         try {
-            Path caminhoDiretorio = Paths.get(DIRETORIO_UPLOAD);
+            // Define o caminho absoluto baseado no diretório de execução do projeto
+            Path caminhoDiretorio = Paths.get(System.getProperty("user.dir"), DIRETORIO_UPLOAD);
             if (!Files.exists(caminhoDiretorio)) {
                 Files.createDirectories(caminhoDiretorio);
             }
 
             String nomeArquivoUnico = UUID.randomUUID().toString() + "_" + arquivo.getOriginalFilename();
             Path caminhoCompleto = caminhoDiretorio.resolve(nomeArquivoUnico);
-            Files.copy(arquivo.getInputStream(), caminhoCompleto);
+            
+            // CORREÇÃO: transferTo delega a gravação direto ao SO, evitando travar a JVM no Linux
+            arquivo.transferTo(caminhoCompleto.toFile());
 
             Map<String, String> resposta = new HashMap<>();
             resposta.put("nomeArquivo", nomeArquivoUnico);
             resposta.put("url", "http://localhost:8080/uploads/" + nomeArquivoUnico);
 
+            System.out.println("📸 Imagem salva com sucesso em: " + caminhoCompleto);
             return ResponseEntity.ok(resposta);
+            
         } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            // CORREÇÃO: Printa o erro exato no console em vez de esconder no catch vazio
+            System.err.println("❌ Erro ao processar o upload de imagem: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Erro interno ao salvar o arquivo: " + e.getMessage());
         }
     }
 
@@ -78,7 +94,6 @@ public class ProdutoController {
                     .<ResponseEntity<?>>map(ResponseEntity::ok)
                     .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Produto não encontrado para atualizar."));
         } catch (IllegalArgumentException e) {
-            // Retorna um erro 400 se tentar atualizar para uma categoria inexistente
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
