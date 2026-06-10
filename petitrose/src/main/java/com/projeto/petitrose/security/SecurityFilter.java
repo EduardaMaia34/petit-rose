@@ -1,5 +1,6 @@
 package com.projeto.petitrose.security;
 
+import com.projeto.petitrose.models.Usuario;
 import com.projeto.petitrose.repositories.UsuarioRepository;
 import com.projeto.petitrose.service.TokenService;
 import jakarta.servlet.FilterChain;
@@ -9,7 +10,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -25,28 +25,18 @@ public class SecurityFilter extends OncePerRequestFilter {
     private UsuarioRepository usuarioRepository;
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
-            return true;
-        }
-
-        String path = request.getServletPath();
-
-        return path.equals("/usuarios/login")
-                || path.equals("/usuarios/register")
-                || path.startsWith("/produtos");
-    }
-
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) 
             throws ServletException, IOException {
+        
+        var token = this.recoverToken(request);
 
-        var token = recuperarToken(request);
         if (token != null) {
-            var user = tokenService.validarToken(token);
-            if (user != null && !user.isEmpty()) {
-                UserDetails usuario = usuarioRepository.findByUser(user);
-
+            
+            String login = tokenService.validarToken(token);
+            
+            if (login != null && !login.isEmpty()) {
+                Usuario usuario = usuarioRepository.findByUser(login);
+                
                 if (usuario != null) {
                     var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -54,10 +44,11 @@ public class SecurityFilter extends OncePerRequestFilter {
             }
         }
 
+        // Garante que a requisição siga em frente e destrave o Timeout do Insomnia!
         filterChain.doFilter(request, response);
     }
 
-    private String recuperarToken(HttpServletRequest request) {
+    private String recoverToken(HttpServletRequest request) {
         var authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return null;
