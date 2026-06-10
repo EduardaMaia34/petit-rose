@@ -5,7 +5,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -29,14 +28,13 @@ public class SecurityConfigurations {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
-                // 1. Aplica as configurações do Bean corsConfigurationSource()
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Suas rotas públicas já configuradas
+                        // Rotas de Usuários e Produtos
                         .requestMatchers(HttpMethod.POST, "/usuarios/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/usuarios/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/produtos/**").permitAll()
@@ -44,6 +42,12 @@ public class SecurityConfigurations {
                         .requestMatchers(HttpMethod.GET, "/produtos/**").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/produtos/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/produtos/**").permitAll()
+
+                        // 🔍 CORREÇÃO: Liberando as rotas de categorias para teste e uso no front
+                        .requestMatchers(HttpMethod.GET, "/categorias/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/categorias/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/categorias/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/categorias/**").permitAll()
 
                         .anyRequest().authenticated()
                 )
@@ -64,13 +68,9 @@ public class SecurityConfigurations {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
-
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
-
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

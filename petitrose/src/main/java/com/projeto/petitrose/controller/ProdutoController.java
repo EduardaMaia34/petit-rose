@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/produtos")
+@RequestMapping("/produtos")
 public class ProdutoController {
 
     @Autowired
@@ -55,7 +55,6 @@ public class ProdutoController {
         try {
             return ResponseEntity.status(HttpStatus.CREATED).body(service.salvar(dto));
         } catch (IllegalArgumentException e) {
-            // Retorna um erro 400 se a categoria fornecida não existir
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
