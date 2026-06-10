@@ -33,7 +33,7 @@ public class ComandaService {
     // comendas abertas
     public List<ComandaResponseDTO> buscarComandasAtivas() {
 
-        List<Comanda> comandasAbertas = comandaRepository.findByAberta();
+        List<Comanda> comandasAbertas = comandaRepository.findByAberta(true);
 
         return comandasAbertas.stream()
                 .map(this::converterParaDTO)
