@@ -1,8 +1,12 @@
 package com.projeto.petitrose.dto;
 
+import java.util.UUID;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 
-public record ProdutoDTO(@NotBlank String nome, @NotNull @Positive float valor) {
-}
+public record ProdutoDTO(
+    @NotBlank String nome,
+    @NotNull float valor,
+    @NotBlank String descricao,
+    @NotNull UUID categoriaId 
+) {}

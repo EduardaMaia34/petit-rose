@@ -40,7 +40,6 @@ public class ProdutoController {
             Path caminhoCompleto = caminhoDiretorio.resolve(nomeArquivoUnico);
             Files.copy(arquivo.getInputStream(), caminhoCompleto);
 
-            // Retorna um JSON com o nome do arquivo para o React
             Map<String, String> resposta = new HashMap<>();
             resposta.put("nomeArquivo", nomeArquivoUnico);
             resposta.put("url", "http://localhost:8080/uploads/" + nomeArquivoUnico);
@@ -52,8 +51,13 @@ public class ProdutoController {
     }
 
     @PostMapping
-    public ResponseEntity<Produto> save(@RequestBody @Valid ProdutoDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.salvar(dto));
+    public ResponseEntity<?> save(@RequestBody @Valid ProdutoDTO dto) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(service.salvar(dto));
+        } catch (IllegalArgumentException e) {
+            // Retorna um erro 400 se a categoria fornecida não existir
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
     @GetMapping
@@ -62,21 +66,26 @@ public class ProdutoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Object> getOne(@PathVariable UUID id) {
+    public ResponseEntity<?> getOne(@PathVariable UUID id) {
         return service.buscarPorId(id)
-                .<ResponseEntity<Object>>map(ResponseEntity::ok)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Produto não encontrado."));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Object> update(@PathVariable UUID id, @RequestBody @Valid ProdutoDTO dto) {
-        return service.atualizar(id, dto)
-                .<ResponseEntity<Object>>map(ResponseEntity::ok)
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Produto não encontrado para atualizar."));
+    public ResponseEntity<?> update(@PathVariable UUID id, @RequestBody @Valid ProdutoDTO dto) {
+        try {
+            return service.atualizar(id, dto)
+                    .<ResponseEntity<?>>map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Produto não encontrado para atualizar."));
+        } catch (IllegalArgumentException e) {
+            // Retorna um erro 400 se tentar atualizar para uma categoria inexistente
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Object> delete(@PathVariable UUID id) {
+    public ResponseEntity<?> delete(@PathVariable UUID id) {
         return service.deletar(id)
                 ? ResponseEntity.ok("Deletado com sucesso.")
                 : ResponseEntity.status(HttpStatus.NOT_FOUND).body("Produto não encontrado.");
