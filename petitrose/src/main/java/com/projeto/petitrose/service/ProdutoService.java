@@ -26,6 +26,7 @@ public class ProdutoService {
     @Transactional
     public Produto salvar(ProdutoDTO dto) {
         var produto = new Produto();
+        // No cadastro não tem problema pois o ID ainda vai ser gerado pelo banco
         BeanUtils.copyProperties(dto, produto, "categoriaId"); 
         
         Categoria categoria = categoriaRepository.findById(dto.categoriaId())
@@ -48,7 +49,9 @@ public class ProdutoService {
         Optional<Produto> produtoOpt = repository.findById(id);
         if (produtoOpt.isPresent()) {
             var produto = produtoOpt.get();
-            BeanUtils.copyProperties(dto, produto, "categoriaId");
+            
+            // CORREÇÃO: "id" adicionado aqui para o BeanUtils não apagar o ID do produto existente
+            BeanUtils.copyProperties(dto, produto, "id", "categoriaId");
             
             Categoria categoria = categoriaRepository.findById(dto.categoriaId())
                     .orElseThrow(() -> new IllegalArgumentException("Categoria não encontrada com o ID fornecido."));
