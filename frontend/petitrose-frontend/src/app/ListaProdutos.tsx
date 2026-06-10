@@ -1,24 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { api } from './api';
 import { Navbar } from './Navbar';
 import { RowProduto } from './RowProduto';
+import { CadastroProduto } from './CadastroProduto';
+import { EditarProduto } from './EditarProduto';
 import '../index.css';
 
 interface Produto {
     id: string;
     nome: string;
-    preco: number;
+    valor: number;
     descricao?: string;
 }
 
 export const ListaProdutos = () => {
     const [produtos, setProdutos] = useState<Produto[]>([]);
-    const navigate = useNavigate();
+
+    // Estados que controlam a visibilidade dos modais na tela
+    const [cadastroAberto, setCadastroAberto] = useState(false);
+    const [editarAberto, setEditarAberto] = useState(false);
+    const [produtoSelecionadoId, setProdutoSelecionadoId] = useState<string | null>(null);
 
     const carregarProdutos = async () => {
         try {
+            // Rota exata mapeada no seu ProdutoController do Spring Boot
             const response = await api.get('/produtos');
             setProdutos(response.data);
         } catch (error) {
@@ -45,7 +51,7 @@ export const ListaProdutos = () => {
                 try {
                     await api.delete(`/produtos/${id}`);
                     Swal.fire('Eliminado!', 'O produto foi removido com sucesso.', 'success');
-                    carregarProdutos();
+                    carregarProdutos(); // Recarrega a tabela localmente após deletar
                 } catch (error) {
                     Swal.fire('Erro', 'Erro ao tentar eliminar o produto.', 'error');
                 }
@@ -53,9 +59,14 @@ export const ListaProdutos = () => {
         });
     };
 
+    // Função executada quando o usuário clica em "Editar" dentro do RowProduto
+    const handleIniciarEdicao = (id: string) => {
+        setProdutoSelecionadoId(id); // Guarda o ID do produto clicado
+        setEditarAberto(true);       // Abre o modal de edição
+    };
+
     return (
         <div className="dashboard-page">
-            {/* Componente Navbar Reutilizável */}
             <Navbar abaAtiva="produtos" />
 
             <div className="main-container">
@@ -63,7 +74,8 @@ export const ListaProdutos = () => {
                     <div className="produtos-table-container">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                             <h2 style={{ margin: 0, color: 'var(--vinho-texto)' }}>Gerenciamento de Produtos</h2>
-                            <button className="btn" onClick={() => navigate('/produtos/novo')}>
+                            {/* O botão agora abre o modal em vez de navegar para outra rota */}
+                            <button className="btn" onClick={() => setCadastroAberto(true)}>
                                 + Novo Produto
                             </button>
                         </div>
@@ -84,11 +96,11 @@ export const ListaProdutos = () => {
                                 </tr>
                             ) : (
                                 produtos.map((prod) => (
-                                    /* Componente de Linha de Produto Reutilizável */
                                     <RowProduto
                                         key={prod.id}
                                         produto={prod}
                                         onDeletar={handleDeletar}
+                                        onEditar={handleIniciarEdicao} // Passa a função de abertura para a linha
                                     />
                                 ))
                             )}
@@ -97,6 +109,24 @@ export const ListaProdutos = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Modal de Cadastro injetado na árvore do componente */}
+            <CadastroProduto
+                isOpen={cadastroAberto}
+                onClose={() => setCadastroAberto(false)}
+                onSucesso={carregarProdutos}
+            />
+
+            {/* Modal de Edição injetado na árvore do componente */}
+            <EditarProduto
+                isOpen={editarAberto}
+                produtoId={produtoSelecionadoId}
+                onClose={() => {
+                    setEditarAberto(false);
+                    setProdutoSelecionadoId(null); // Limpa o ID selecionado ao fechar
+                }}
+                onSucesso={carregarProdutos}
+            />
         </div>
     );
 };

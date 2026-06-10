@@ -11,6 +11,7 @@
     --rosa-hover: #fca0a0;      /* Efeito de passar o mouse */
     --vinho-texto: #600000;     /* Texto principal e títulos */
     --vinho-escuro: #4a0000;
+    --bg-bege-hover: #ffdeeb;   /* Cor bege utilizada no hover da navbar */
 
     /* VARIÁVEIS DE REUTILIZAÇÃO */
     --radius-p: 10px;
@@ -117,6 +118,7 @@ input[type="number"],
 .input-group {
     margin-bottom: 30px;
     text-align: left;
+    position: relative; /* Mantido para permitir o alinhamento absoluto do olho interno */
 }
 
 .input-group input {
@@ -133,6 +135,31 @@ input[type="number"],
 .input-group input::placeholder {
     color: #600000;
     opacity: 0.7;
+}
+
+/* ADICIONADO APENAS O BOTÃO DO OLHO PERSONALIZADO SEM ALTERAR O INPUT-GROUP */
+.input-group .btn-olho {
+    position: absolute;
+    right: 0px;
+    top: 0px;
+    height: 100%;
+    width: 65px;               /* Define a área lateral do botão */
+    background: none;
+    border: none;
+    border-left: 1px solid rgba(96, 0, 0, 0.35); /* Linha vertical divisória idêntica à imagem */
+    border-top-right-radius: 12px;    /* Casamento perfeito com os cantos do input */
+    border-bottom-right-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    outline: none;
+    z-index: 10;
+}
+
+.input-group .btn-olho:hover {
+    background-color: rgba(96, 0, 0, 0.04);
 }
 
 .login-btn {
@@ -333,22 +360,37 @@ input[type="number"],
     gap: 30px;
 }
 
-.dashboard-page .navbar-menu a {
+/* Base padronizada para os botões e links da navbar */
+.dashboard-page .navbar-menu .nav-btn {
+    background: none;
+    border: none;
     text-decoration: none;
     color: #710100;
+    font-family: 'Georgia', 'Abhaya Libre', serif;
     font-size: 18px;
     padding: 6px 12px;
     border-radius: 12px;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, opacity 0.3s ease;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
 }
 
-.dashboard-page .navbar-menu a:hover {
-    background-color: #ffdeeb;
+/* Efeito Hover Bege para itens ativos/habilitados */
+.dashboard-page .navbar-menu .nav-btn:not([disabled]):hover {
+    background-color: var(--bg-bege-hover);
 }
 
-.dashboard-page .navbar-menu .ativo {
+/* Estado Ativo */
+.dashboard-page .navbar-menu .nav-btn.ativo {
     background-color: #fffbe6;
     font-weight: bold;
+}
+
+/* Estado Desativado */
+.dashboard-page .navbar-menu .nav-btn[disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
 }
 
 /* Grid e Blocos do Painel do Cliente */
@@ -634,7 +676,8 @@ input[type="number"],
 
 .form-group input[type="text"],
 .form-group input[type="number"],
-.form-group textarea {
+.form-group textarea,
+.form-group select {
     width: 100%;
     padding: 12px;
     border: 1px solid var(--rosa-escuro);
@@ -643,11 +686,13 @@ input[type="number"],
     font-family: inherit;
     color: var(--vinho-texto);
     font-size: 14px;
+    outline: none;
+    transition: var(--transition);
 }
 
 .form-group input:focus,
-.form-group textarea:focus {
-    outline: none;
+.form-group textarea:focus,
+.form-group select:focus {
     border-color: var(--rosa-hover);
     box-shadow: 0 0 5px rgba(252, 177, 176, 0.5);
 }
