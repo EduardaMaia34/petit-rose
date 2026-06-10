@@ -32,7 +32,6 @@ public class SecurityFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
-        // 2. IGNORA ROTAS PÚBLICAS DA API DE USUÁRIOS E PRODUTOS
         return path.equals("/usuarios/login")
                 || path.equals("/usuarios/register")
                 || path.startsWith("/produtos");
@@ -44,9 +43,9 @@ public class SecurityFilter extends OncePerRequestFilter {
 
         var token = recuperarToken(request);
         if (token != null) {
-            var email = tokenService.validarToken(token);
-            if (email != null && !email.isEmpty()) {
-                UserDetails usuario = usuarioRepository.findByEmail(email);
+            var user = tokenService.validarToken(token);
+            if (user != null && !user.isEmpty()) {
+                UserDetails usuario = usuarioRepository.findByUser(user);
 
                 if (usuario != null) {
                     var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
