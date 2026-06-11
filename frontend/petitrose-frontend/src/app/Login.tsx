@@ -1,39 +1,24 @@
 import React, { useState } from 'react';
-<<<<<<< HEAD
 import { useNavigate } from 'react-router-dom';
-=======
-import { useNavigate } from 'react-router-dom'; // 1. Importado o hook de navegação
->>>>>>> origin/dev-gustavo
 import Swal from 'sweetalert2';
 import axios from 'axios';
 import '../index.css';
 import logoPetitRose from '../assets/Logo.png';
 
 export const Login = () => {
-<<<<<<< HEAD
-    // Declarado como 'user' para bater com o input e com o Spring Security
+    // 1. Estados declarados de forma única
     const [user, setUser] = useState('');
     const [senha, setSenha] = useState('');
     const [mostrarSenha, setMostrarSenha] = useState(false);
     const navigate = useNavigate();
-=======
-    const [email, setEmail] = useState('');
-    const [senha, setSenha] = useState('');
-    const navigate = useNavigate(); // 2. Inicializado o navigate
->>>>>>> origin/dev-gustavo
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
 
         try {
-<<<<<<< HEAD
-            // Enviando 'user' e 'senha' exatamente como o Spring Boot espera receber no seu DTO de autenticação
+            // 2. Requisição limpa enviando 'user' para o backend
             const response = await axios.post('http://localhost:8081/usuarios/login', {
                 user: user,
-=======
-            const response = await axios.post('http://localhost:8081/usuarios/login', {
-                email: email,
->>>>>>> origin/dev-gustavo
                 senha: senha
             });
 
@@ -47,10 +32,6 @@ export const Login = () => {
                     icon: 'success',
                     confirmButtonColor: '#600000'
                 }).then(() => {
-<<<<<<< HEAD
-=======
-                    // 3. Redireciona para o menu cliente assim que o usuário clica em "OK"
->>>>>>> origin/dev-gustavo
                     navigate('/menu-cliente');
                 });
             }
@@ -72,8 +53,8 @@ export const Login = () => {
                         <img src={logoPetitRose} className="logo-img" alt="Logo Petit Rose" />
                     </div>
                     <form className="login-form" onSubmit={handleLogin}>
-<<<<<<< HEAD
-                        {/* Input de Usuário sincronizado perfeitamente com o estado */}
+
+                        {/* Input de Usuário único */}
                         <div className="input-group">
                             <input
                                 type="text"
@@ -84,7 +65,7 @@ export const Login = () => {
                             />
                         </div>
 
-                        {/* Input de Senha com o Botão do Olho */}
+                        {/* Input de Senha com o Botão do Olho embutido */}
                         <div className="input-group">
                             <input
                                 type={mostrarSenha ? "text" : "password"}
@@ -115,30 +96,6 @@ export const Login = () => {
                                 )}
                             </button>
                         </div>
-
-=======
-                        <div className="input-group">
-                            <input
-                                type="email"
-                                placeholder="E-mail"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="input-group">
-                            <input
-                                type="password"
-                                placeholder="Senha"
-                                value={senha}
-                                onChange={(e) => setSenha(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="register-link-wrapper">
-                            <a href="/cadastrar" className="register-link">CADASTRAR USUÁRIO</a>
-                        </div>
->>>>>>> origin/dev-gustavo
                         <button type="submit" className="login-btn btn-padrao">LOGIN</button>
                     </form>
                 </div>
