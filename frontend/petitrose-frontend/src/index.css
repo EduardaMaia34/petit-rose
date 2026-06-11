@@ -11,10 +11,7 @@
     --rosa-hover: #fca0a0;      /* Efeito de passar o mouse */
     --vinho-texto: #600000;     /* Texto principal e títulos */
     --vinho-escuro: #4a0000;
-<<<<<<< HEAD
     --bg-bege-hover: #ffdeeb;   /* Cor bege utilizada no hover da navbar */
-=======
->>>>>>> origin/dev-gustavo
 
     /* VARIÁVEIS DE REUTILIZAÇÃO */
     --radius-p: 10px;
@@ -49,7 +46,7 @@ body {
     background-color: var(--rosa-principal);
     color: var(--vinho-texto);
     border: none;
-    border-radius: var(--radius-m);
+    border-radius: var(--radius-p);
     padding: 12px 30px;
     font-weight: bold;
     cursor: pointer;
@@ -121,10 +118,7 @@ input[type="number"],
 .input-group {
     margin-bottom: 30px;
     text-align: left;
-<<<<<<< HEAD
-    position: relative; /* Mantido para permitir o alinhamento absoluto do olho interno */
-=======
->>>>>>> origin/dev-gustavo
+    position: relative; /* Alinhamento absoluto do olho interno */
 }
 
 .input-group input {
@@ -143,18 +137,17 @@ input[type="number"],
     opacity: 0.7;
 }
 
-<<<<<<< HEAD
-/* ADICIONADO APENAS O BOTÃO DO OLHO PERSONALIZADO SEM ALTERAR O INPUT-GROUP */
+/* BOTÃO DO OLHO PERSONALIZADO */
 .input-group .btn-olho {
     position: absolute;
     right: 0px;
     top: 0px;
     height: 100%;
-    width: 65px;               /* Define a área lateral do botão */
+    width: 65px;
     background: none;
     border: none;
-    border-left: 1px solid rgba(96, 0, 0, 0.35); /* Linha vertical divisória idêntica à imagem */
-    border-top-right-radius: 12px;    /* Casamento perfeito com os cantos do input */
+    border-left: 1px solid rgba(96, 0, 0, 0.35);
+    border-top-right-radius: 12px;
     border-bottom-right-radius: 12px;
     cursor: pointer;
     display: flex;
@@ -169,8 +162,6 @@ input[type="number"],
     background-color: rgba(96, 0, 0, 0.04);
 }
 
-=======
->>>>>>> origin/dev-gustavo
 .login-btn {
     width: 90%;
     padding: 14px;
@@ -369,7 +360,6 @@ input[type="number"],
     gap: 30px;
 }
 
-<<<<<<< HEAD
 /* Base padronizada para os botões e links da navbar */
 .dashboard-page .navbar-menu .nav-btn {
     background: none;
@@ -393,35 +383,16 @@ input[type="number"],
 
 /* Estado Ativo */
 .dashboard-page .navbar-menu .nav-btn.ativo {
-=======
-.dashboard-page .navbar-menu a {
-    text-decoration: none;
-    color: #710100;
-    font-size: 18px;
-    padding: 6px 12px;
-    border-radius: 12px;
-    transition: background-color 0.3s ease;
-}
-
-.dashboard-page .navbar-menu a:hover {
-    background-color: #ffdeeb;
-}
-
-.dashboard-page .navbar-menu .ativo {
->>>>>>> origin/dev-gustavo
     background-color: #fffbe6;
     font-weight: bold;
 }
 
-<<<<<<< HEAD
 /* Estado Desativado */
 .dashboard-page .navbar-menu .nav-btn[disabled] {
     cursor: not-allowed;
     opacity: 0.5;
 }
 
-=======
->>>>>>> origin/dev-gustavo
 /* Grid e Blocos do Painel do Cliente */
 .dashboard-page .main-container {
     background-color: #fffaf0;
@@ -476,7 +447,7 @@ input[type="number"],
     background-color: #600000;
     color: #fff8e6;
     padding: 12px 24px;
-    border-radius: 25px;
+    border-radius: 15px;
     text-decoration: none;
     font-weight: bold;
     transition: background-color 0.3s ease;
@@ -705,12 +676,8 @@ input[type="number"],
 
 .form-group input[type="text"],
 .form-group input[type="number"],
-<<<<<<< HEAD
 .form-group textarea,
 .form-group select {
-=======
-.form-group textarea {
->>>>>>> origin/dev-gustavo
     width: 100%;
     padding: 12px;
     border: 1px solid var(--rosa-escuro);
@@ -719,7 +686,6 @@ input[type="number"],
     font-family: inherit;
     color: var(--vinho-texto);
     font-size: 14px;
-<<<<<<< HEAD
     outline: none;
     transition: var(--transition);
 }
@@ -727,13 +693,6 @@ input[type="number"],
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {
-=======
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-    outline: none;
->>>>>>> origin/dev-gustavo
     border-color: var(--rosa-hover);
     box-shadow: 0 0 5px rgba(252, 177, 176, 0.5);
 }

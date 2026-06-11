@@ -6,8 +6,7 @@ export const MenuCliente = () => {
     return (
         /* Substituído o style inline pela classe .dashboard-page para restaurar o fundo creme original */
         <div className="dashboard-page">
-            <Navbar abaAtiva="produtos" />
-            {/* CONTEÚDO PRINCIPAL */}
+            <Navbar abaAtiva="inicio" />
             <div className="main-container">
                 <div className="content-wrapper">
 

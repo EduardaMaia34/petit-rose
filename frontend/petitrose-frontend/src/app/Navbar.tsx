@@ -4,7 +4,8 @@ import Swal from 'sweetalert2';
 import logoBarraPetitRose from '../assets/LogoBarra.png';
 
 interface NavbarProps {
-    abaAtiva: 'inicio' | 'produtos' | 'pedidos' | 'clientes' | 'relatorios';
+    // Define estritamente quais são as abas válidas do sistema
+    abaAtiva: 'inicio' | 'produtos' | 'pedidos' | 'catalogo' | 'comandas' | 'relatorios';
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ abaAtiva }) => {
@@ -23,7 +24,7 @@ export const Navbar: React.FC<NavbarProps> = ({ abaAtiva }) => {
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                localStorage.removeItem('token'); // Limpa o token
+                localStorage.removeItem('token'); // Limpa o token de autenticação
                 navigate('/login');
             }
         });
@@ -31,23 +32,69 @@ export const Navbar: React.FC<NavbarProps> = ({ abaAtiva }) => {
 
     return (
         <div className="navbar">
-            <img src={logoBarraPetitRose} alt="Logo Petit Rose" className="navbar-logo" onClick={() => navigate('/dashboard')} style={{cursor: 'pointer'}} />
+            <img
+                src={logoBarraPetitRose}
+                alt="Logo Petit Rose"
+                className="navbar-logo"
+                onClick={() => navigate('/menu-cliente')} // Redireciona para o Início ao clicar na logo
+                style={{ cursor: 'pointer' }}
+            />
             <div className="navbar-menu">
-<<<<<<< HEAD
-                <button onClick={() => navigate('/menu-cliente')} className={`nav-btn ${abaAtiva === 'inicio' ? 'ativo' : ''}`}>Início</button>
-                <button onClick={() => navigate('/produtos')} className={`nav-btn ${abaAtiva === 'produtos' ? 'ativo' : ''}`}>Produtos</button>
-                <button className="nav-btn" disabled>Pedidos</button>
-                <button className="nav-btn" disabled>Clientes</button>
-                <button className="nav-btn" disabled>Relatórios</button>
-                <a href="/login" id="btn-sair" className="nav-btn">Sair</a>
-=======
-                <button onClick={() => navigate('/menu-cliente')} className={abaAtiva === 'inicio' ? 'ativo' : ''} style={{ background: 'none', border: 'none', font: 'inherit', cursor: 'pointer' }}>Início</button>
-                <button onClick={() => navigate('/produtos')} className={abaAtiva === 'produtos' ? 'ativo' : ''} style={{ background: 'none', border: 'none', font: 'inherit', cursor: 'pointer' }}>Produtos</button>
-                <button style={{ background: 'none', border: 'none', font: 'inherit', cursor: 'not-allowed', opacity: 0.6 }} disabled>Pedidos</button>
-                <button style={{ background: 'none', border: 'none', font: 'inherit', cursor: 'not-allowed', opacity: 0.6 }} disabled>Clientes</button>
-                <button style={{ background: 'none', border: 'none', font: 'inherit', cursor: 'not-allowed', opacity: 0.6 }} disabled>Relatórios</button>
-                <a href="/login" id="btn-sair" onClick={handleSair}>Sair</a>
->>>>>>> origin/dev-gustavo
+                {/* Aba Início: Só fica ativa se abaAtiva === 'inicio' */}
+                <button
+                    onClick={() => navigate('/menu-cliente')}
+                    className={`nav-btn ${abaAtiva === 'inicio' ? 'ativo' : ''}`}
+                >
+                    Início
+                </button>
+
+                {/* Aba Produtos: Só fica ativa se abaAtiva === 'produtos' */}
+                <button
+                    onClick={() => navigate('/produtos')}
+                    className={`nav-btn ${abaAtiva === 'produtos' ? 'ativo' : ''}`}
+                >
+                    Produtos
+                </button>
+
+                <button
+                    onClick={() => navigate('/catalogo')}
+                    className={`nav-btn ${abaAtiva === 'catalogo' ? 'ativo' : ''}`}
+                >
+                    Catálogo
+                </button>
+
+                {/* Aba Pedidos: Só fica ativa se abaAtiva === 'pedidos' */}
+                <button
+                    onClick={() => navigate('/pedidos')}
+                    className={`nav-btn ${abaAtiva === 'pedidos' ? 'ativo' : ''}`}
+                >
+                    Pedidos
+                </button>
+
+                <button
+                    onClick={() => navigate('/comandas')}
+                    className={`nav-btn ${abaAtiva === 'comandas' ? 'ativo' : ''}`}
+                >
+                    Comandas
+                </button>
+
+                {/* Aba Relatórios: Só fica ativa se abaAtiva === 'relatorios' */}
+                <button
+                    onClick={() => navigate('/relatorios')}
+                    className={`nav-btn ${abaAtiva === 'relatorios' ? 'ativo' : ''}`}
+                >
+                    Relatórios
+                </button>
+
+                {/* Botão de Sair */}
+                <button
+                    className="nav-btn"
+                    id="btn-sair"
+                    onClick={handleSair}
+                >
+                    Sair
+                </button>
+
                 <span className="menu-icon">☰</span>
             </div>
         </div>
