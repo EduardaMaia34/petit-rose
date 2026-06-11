@@ -5,11 +5,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-public record ComandaResponseDTO(
-        UUID id,
+public record VendaResumoDTO(
+        UUID comandaId,
         Integer numeroMesa,
-        LocalDateTime dataAbertura,
-        Boolean aberta,
-        BigDecimal valorTotalComanda,
+        LocalDateTime dataFechamento,
+        BigDecimal valorTotal,
         MetodoPagamento metodoPagamento
 ) {}

@@ -29,6 +29,9 @@ public class Comanda implements Serializable {
     @Column(nullable = false)
     private Boolean aberta = true;
 
+    @Enumerated(EnumType.STRING)
+    private MetodoPagamento metodoPagamento;
+
     //uma comanda pode ter vários pedidos
     @OneToMany(mappedBy = "comanda", cascade = CascadeType.ALL)
     private List<Pedido> pedidos;

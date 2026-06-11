@@ -2,6 +2,7 @@ package com.projeto.petitrose.controller;
 
 import com.projeto.petitrose.dto.ComandaRequestDTO;
 import com.projeto.petitrose.dto.ComandaResponseDTO;
+import com.projeto.petitrose.models.MetodoPagamento;
 import com.projeto.petitrose.service.ComandaService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,8 +42,10 @@ public class ComandaController {
     }
 
     @PutMapping("/{id}/fechar")
-    public ResponseEntity<Void> fecharComanda(@PathVariable UUID id) {
-        comandaService.fecharComanda(id);
+    public ResponseEntity<Void> fecharComanda(
+            @PathVariable UUID id,
+            @RequestParam MetodoPagamento metodoPagamento) {
+        comandaService.fecharComanda(id, metodoPagamento);
         return ResponseEntity.noContent().build();
     }
 }

@@ -3,6 +3,7 @@ package com.projeto.petitrose.service;
 import com.projeto.petitrose.dto.ComandaRequestDTO;
 import com.projeto.petitrose.dto.ComandaResponseDTO;
 import com.projeto.petitrose.models.Comanda;
+import com.projeto.petitrose.models.MetodoPagamento;
 import com.projeto.petitrose.models.Pedido;
 import com.projeto.petitrose.repositories.ComandaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +49,7 @@ public class ComandaService {
     }
 
     // fechar comanda
-    public void fecharComanda(UUID id) {
+    public void fecharComanda(UUID id, MetodoPagamento metodoPagamento) {
         Comanda comanda = comandaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Comanda não encontrada"));
 
@@ -56,8 +57,13 @@ public class ComandaService {
             throw new RuntimeException("Esta comanda já está fechada");
         }
 
+        if (metodoPagamento == null) {
+            throw new IllegalArgumentException("O método de pagamento é obrigatório para fechar a comanda");
+        }
+
         comanda.setAberta(false);
         comanda.setDataFechamento(LocalDateTime.now());
+        comanda.setMetodoPagamento(metodoPagamento);
 
         comandaRepository.save(comanda);
     }
@@ -77,7 +83,8 @@ public class ComandaService {
                 comanda.getNumeroMesa(),
                 comanda.getDataAbertura(),
                 comanda.getAberta(),
-                valorTotalComanda
+                valorTotalComanda,
+                comanda.getMetodoPagamento()
         );
     }
 }
