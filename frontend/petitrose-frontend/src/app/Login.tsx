@@ -30,7 +30,7 @@ export const Login = () => {
                     confirmButtonColor: '#600000'
                 }).then(() => {
                     // 3. Redireciona para o menu cliente assim que o usuário clica em "OK"
-                    navigate('/menu-cliente');
+                    navigate('/menu-admin');
                 });
             }
         } catch (error: any) {
