@@ -1,8 +1,14 @@
+<<<<<<< HEAD
 import React, { useEffect, useState } from 'react';
+=======
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+>>>>>>> origin/dev-gustavo
 import Swal from 'sweetalert2';
 import { api } from './api';
 import '../index.css';
 
+<<<<<<< HEAD
 interface Categoria {
     id: string;
     nome: string;
@@ -60,16 +66,28 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
             setCarregandoImagem(false);
         }
     };
+=======
+export const CadastroProduto = () => {
+    const [nome, setNome] = useState('');
+    const [valor, setValor] = useState(''); // Alterado de preco para valor
+    const [descricao, setDescricao] = useState('');
+    const navigate = useNavigate();
+>>>>>>> origin/dev-gustavo
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+<<<<<<< HEAD
         if (!nome || !valor || !categoriaId) {
+=======
+        if (!nome || !valor) {
+>>>>>>> origin/dev-gustavo
             Swal.fire('Aviso', 'Preencha todos os campos obrigatórios (*)', 'warning');
             return;
         }
 
         try {
+<<<<<<< HEAD
             await api.post('/produtos', {
                 nome: nome,
                 valor: parseFloat(valor),
@@ -90,12 +108,30 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
             onClose();
         } catch (error) {
             Swal.fire('Erro', 'Não foi possível cadastrar o produto.', 'error');
+=======
+            // 🔥 CORREÇÃO CRÍTICA: Chave alterada de 'preco' para 'valor'
+            await api.post('/produtos', {
+                nome: nome,
+                valor: parseFloat(valor),
+                descricao: descricao // Mantenha se o seu DTO tiver, se não tiver pode remover
+            });
+
+            Swal.fire('Sucesso!', 'Produto cadastrado com sucesso!', 'success');
+            navigate('/produtos');
+        } catch (error) {
+            Swal.fire('Erro', 'Não foi possível cadastrar o produto. Verifique os dados.', 'error');
+>>>>>>> origin/dev-gustavo
         }
     };
 
     return (
+<<<<<<< HEAD
         <div style={modalOverlayStyle}>
             <div className="form-produto-container" style={modalContainerStyle}>
+=======
+        <div className="dashboard-page" style={{ justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+            <div className="form-produto-container">
+>>>>>>> origin/dev-gustavo
                 <h2>Novo Produto - Petit Rose</h2>
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
@@ -122,6 +158,7 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
                     </div>
 
                     <div className="form-group">
+<<<<<<< HEAD
                         <label>Categoria *</label>
                         <select
                             value={categoriaId}
@@ -156,12 +193,25 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
                             onChange={(e) => setDescricao(e.target.value)}
                             placeholder="Detalhes opcionais..."
                             required
+=======
+                        <label>Descrição</label>
+                        <textarea
+                            rows={4}
+                            value={descricao}
+                            onChange={(e) => setDescricao(e.target.value)}
+                            placeholder="Detalhes opcionais..."
+>>>>>>> origin/dev-gustavo
                         />
                     </div>
 
                     <div style={{ display: 'flex', gap: '15px', marginTop: '25px' }}>
+<<<<<<< HEAD
                         <button type="submit" className="btn" style={{ flex: 1 }} disabled={carregandoImagem}>Salvar Produto</button>
                         <button type="button" className="btn-voltar" style={{ flex: 1 }} onClick={onClose}>
+=======
+                        <button type="submit" className="btn" style={{ flex: 1 }}>Salvar Produto</button>
+                        <button type="button" className="btn-voltar" style={{ flex: 1 }} onClick={() => navigate('/produtos')}>
+>>>>>>> origin/dev-gustavo
                             Cancelar
                         </button>
                     </div>
@@ -169,6 +219,7 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
             </div>
         </div>
     );
+<<<<<<< HEAD
 };
 
 const modalOverlayStyle: React.CSSProperties = {
@@ -179,4 +230,6 @@ const modalOverlayStyle: React.CSSProperties = {
 
 const modalContainerStyle: React.CSSProperties = {
     margin: 0, width: '100%', maxWidth: '600px', boxShadow: '0 8px 30px rgba(0,0,0,0.2)'
+=======
+>>>>>>> origin/dev-gustavo
 };

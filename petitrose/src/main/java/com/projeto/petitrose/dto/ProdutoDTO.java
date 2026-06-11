@@ -8,6 +8,10 @@ public record ProdutoDTO(
     @NotBlank String nome,
     @NotNull float valor,
     @NotBlank String descricao,
+<<<<<<< HEAD
     @NotNull UUID categoriaId,
     String imagemUrl
+=======
+    @NotNull UUID categoriaId 
+>>>>>>> origin/dev-gustavo
 ) {}
