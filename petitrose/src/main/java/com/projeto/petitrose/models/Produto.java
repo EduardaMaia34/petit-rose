@@ -38,6 +38,6 @@ public class Produto implements Serializable {
     @JoinColumn(name = "categoria_id", nullable = false)
     private Categoria categoria;
 
-    @Column(nullable = false)
-    private boolean catalogo_ativo;
+    @Column(name = "catalogo_ativo", nullable = false)
+    private boolean catalogoAtivo;
 }

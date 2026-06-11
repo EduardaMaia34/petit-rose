@@ -56,6 +56,9 @@ public class SecurityConfigurations {
                         .requestMatchers(HttpMethod.PUT, "/categorias/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/categorias/**").permitAll()
 
+                        .requestMatchers("/catalogo/**").permitAll()
+                        .requestMatchers("/catalogo").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
