@@ -100,7 +100,7 @@ export const Catalogo = () => {
 
     return (
         <div className="dashboard-page">
-            <Navbar abaAtiva="produtos" />
+            <Navbar abaAtiva="catalogo" />
 
             <div className="main-container">
                 <div className="container-header">
