@@ -33,7 +33,6 @@ public class SecurityConfigurations {
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
@@ -58,6 +57,12 @@ public class SecurityConfigurations {
 
                         .requestMatchers("/catalogo/**").permitAll()
                         .requestMatchers("/catalogo").permitAll()
+
+                        .requestMatchers("/checkout/**").permitAll()
+                        .requestMatchers("/checkout").permitAll()
+
+                        .requestMatchers("/comandas/**").permitAll()
+                        .requestMatchers("/pedidos/**").permitAll()
 
                         .anyRequest().authenticated()
                 )

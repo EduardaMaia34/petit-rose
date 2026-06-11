@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -40,11 +42,8 @@ public class Pedido implements Serializable{
     @Column(nullable=false)
     private BigDecimal valorTotal;
 
-    @ManyToOne
-    @JoinColumn(name = "cliente_id", nullable = false)
-    private Usuario cliente;
-
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<ItemPedido> itens;
 
     @ManyToOne

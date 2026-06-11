@@ -1,13 +1,17 @@
 package com.projeto.petitrose.service;
 
+import com.projeto.petitrose.dto.CheckoutRequestDTO;
+import com.projeto.petitrose.dto.CheckoutResponseDTO;
 import com.projeto.petitrose.dto.ComandaRequestDTO;
 import com.projeto.petitrose.dto.ComandaResponseDTO;
+import com.projeto.petitrose.dto.ItemConsolidadoDTO;
 import com.projeto.petitrose.models.Comanda;
 import com.projeto.petitrose.models.MetodoPagamento;
 import com.projeto.petitrose.models.Pedido;
 import com.projeto.petitrose.repositories.ComandaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // Import adicionado
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -25,17 +29,13 @@ public class ComandaService {
     public ComandaResponseDTO abrirNovaComanda(ComandaRequestDTO dto) {
         Comanda comanda = new Comanda();
         comanda.setNumeroMesa(dto.numeroMesa());
-        // 'dataAbertura' e 'aberta' já têm valores padrão na sua entidade
-
         Comanda comandaSalva = comandaRepository.save(comanda);
         return converterParaDTO(comandaSalva);
     }
 
     // comendas abertas
     public List<ComandaResponseDTO> buscarComandasAtivas() {
-
         List<Comanda> comandasAbertas = comandaRepository.findByAberta(true);
-
         return comandasAbertas.stream()
                 .map(this::converterParaDTO)
                 .collect(Collectors.toList());
@@ -48,7 +48,7 @@ public class ComandaService {
         return converterParaDTO(comanda);
     }
 
-    // fechar comanda
+    // fechar comanda individual
     public void fecharComanda(UUID id, MetodoPagamento metodoPagamento) {
         Comanda comanda = comandaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Comanda não encontrada"));
@@ -88,9 +88,66 @@ public class ComandaService {
                 .collect(Collectors.toList());
     }
 
+    // Método de Checkout / Pagamento de múltiplas comandas combinado
+    @Transactional
+    public CheckoutResponseDTO processarPagamento(CheckoutRequestDTO request) {
+        List<Comanda> comandas = comandaRepository.findAllById(request.comandaIds());
+        
+        if (comandas.isEmpty()) {
+            throw new IllegalArgumentException("Nenhuma comanda encontrada para os IDs fornecidos.");
+        }
+
+        // Calcula o total somando os pedidos de cada uma das comandas encontradas
+        BigDecimal totalGeral = comandas.stream()
+                .map(comanda -> {
+                    if (comanda.getPedidos() == null) return BigDecimal.ZERO;
+                    return comanda.getPedidos().stream()
+                            .map(Pedido::getValorTotal)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Consolida os itens de todas as comandas agrupando por Produto
+        List<ItemConsolidadoDTO> itensConsolidados = comandas.stream()
+                .filter(comanda -> comanda.getPedidos() != null)
+                .flatMap(comanda -> comanda.getPedidos().stream())
+                .filter(pedido -> pedido.getItens() != null)
+                .flatMap(pedido -> pedido.getItens().stream())
+                .collect(Collectors.groupingBy(
+                        item -> item.getProduto().getId(),
+                        Collectors.collectingAndThen(
+                                Collectors.toList(),
+                                list -> {
+                                    var primeiroItem = list.get(0);
+                                    int qtdTotal = list.stream().mapToInt(item -> item.getQuantidade()).sum();
+                                    return new ItemConsolidadoDTO( // Nome do DTO corrigido para PT-BR
+                                            primeiroItem.getProduto().getId(),
+                                            primeiroItem.getProduto().getNome(),
+                                            qtdTotal,
+                                            primeiroItem.getPrecoUnitario()
+                                    );
+                                }
+                        )
+                ))
+                .values()
+                .stream()
+                .collect(Collectors.toList());
+
+        // Atualiza o status de todas as comandas utilizando o padrão da sua entidade
+        comandas.forEach(comanda -> {
+            comanda.setAberta(false);
+            comanda.setDataFechamento(LocalDateTime.now());
+            // Se o CheckoutRequestDTO receber o método de pagamento, você pode mapear aqui:
+            // comanda.setMetodoPagamento(request.metodoPagamento()); 
+        });
+        
+        comandaRepository.saveAll(comandas);
+
+        return new CheckoutResponseDTO(totalGeral, itensConsolidados);
+    }
+
     // auxiliar
     private ComandaResponseDTO converterParaDTO(Comanda comanda) {
-        // Sacada legal: Soma o valorTotal de todos os pedidos vinculados a essa comanda
         BigDecimal valorTotalComanda = BigDecimal.ZERO;
         if (comanda.getPedidos() != null) {
             valorTotalComanda = comanda.getPedidos().stream()
