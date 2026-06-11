@@ -24,7 +24,7 @@ public class TokenService {
             Algorithm algorithm = Algorithm.HMAC256(secret);
             return JWT.create()
                     .withIssuer("petit-rose-api")
-                    .withSubject(usuario.getEmail())
+                    .withSubject(usuario.getUser())
                     .withExpiresAt(gerarDataExpiracao())
                     .sign(algorithm);
         } catch (JWTCreationException exception) {
@@ -46,7 +46,6 @@ public class TokenService {
     }
 
     private Instant gerarDataExpiracao() {
-        // Expira em 2 horas
         return LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.of("-03:00"));
     }
 }
