@@ -9,6 +9,7 @@ public record ComandaResponseDTO(
         UUID id,
         Integer numeroMesa,
         LocalDateTime dataAbertura,
+        LocalDateTime dataFechamento,
         Boolean aberta,
         BigDecimal valorTotalComanda,
         MetodoPagamento metodoPagamento

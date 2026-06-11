@@ -68,6 +68,26 @@ public class ComandaService {
         comandaRepository.save(comanda);
     }
 
+    // filtrar comandas fechadas por intervalo de datas
+    public List<ComandaResponseDTO> buscarComandasFechadasPorPeriodo(LocalDateTime dataInicio, LocalDateTime dataFim) {
+        if (dataInicio == null || dataFim == null) {
+            throw new IllegalArgumentException("As datas de início e fim são obrigatórias.");
+        }
+
+        if (dataInicio.isAfter(dataFim)) {
+            throw new IllegalArgumentException("A data de início não pode ser posterior à data de fim.");
+        }
+
+        LocalDateTime inicioDoDia = dataInicio.withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime fimDoDia = dataFim.withHour(23).withMinute(59).withSecond(59).withNano(999999999);
+
+        List<Comanda> comandasFechadas = comandaRepository.findByAbertaFalseAndDataFechamentoBetween(inicioDoDia, fimDoDia);
+
+        return comandasFechadas.stream()
+                .map(this::converterParaDTO)
+                .collect(Collectors.toList());
+    }
+
     // auxiliar
     private ComandaResponseDTO converterParaDTO(Comanda comanda) {
         // Sacada legal: Soma o valorTotal de todos os pedidos vinculados a essa comanda
@@ -82,6 +102,7 @@ public class ComandaService {
                 comanda.getId(),
                 comanda.getNumeroMesa(),
                 comanda.getDataAbertura(),
+                comanda.getDataFechamento(),
                 comanda.getAberta(),
                 valorTotalComanda,
                 comanda.getMetodoPagamento()
