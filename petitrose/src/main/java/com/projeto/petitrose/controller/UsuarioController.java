@@ -8,15 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.projeto.petitrose.dto.LoginDTO;
 import com.projeto.petitrose.dto.RegisterDTO;
@@ -48,11 +40,10 @@ public class UsuarioController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // autenticacao - login e register
-
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginDTO data) {
-        var usernamePassword = new UsernamePasswordAuthenticationToken(data.email(), data.senha());
+        // CORRIGIDO: Alterado para data.user() para bater com a entidade
+        var usernamePassword = new UsernamePasswordAuthenticationToken(data.user(), data.senha());
         var auth = this.authenticationManager.authenticate(usernamePassword);
 
         var token = tokenService.gerarToken((Usuario) auth.getPrincipal());
@@ -62,15 +53,15 @@ public class UsuarioController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterDTO data) {
-        if (this.repository.existsByEmail(data.email())) {
-            return ResponseEntity.badRequest().body("Erro: Email já cadastrado.");
+        if (this.repository.existsByUser(data.user())) {
+            return ResponseEntity.badRequest().body("Erro: Nome de usuário já cadastrado.");
         }
 
         String encryptedPassword = passwordEncoder.encode(data.senha());
         
         Usuario novoUsuario = new Usuario();
         novoUsuario.setNome(data.nome());
-        novoUsuario.setEmail(data.email());
+        novoUsuario.setUser(data.user());
         novoUsuario.setSenha(encryptedPassword);
         novoUsuario.setGerente(Boolean.TRUE.equals(data.gerente()));
 
@@ -78,8 +69,6 @@ public class UsuarioController {
 
         return ResponseEntity.ok().build();
     }
-
-    //endpoints CRUD
 
     @GetMapping
     public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {

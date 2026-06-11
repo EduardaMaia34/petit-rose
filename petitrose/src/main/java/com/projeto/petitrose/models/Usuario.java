@@ -17,12 +17,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
 
-
 @Entity
-@Data //getters e setters
+@Data // getters e setters
 @Table(name="Usuario")
-public class Usuario implements Serializable, UserDetails{
-    private static final long serialVersionUID = 1L; //camada extra de seguranca
+public class Usuario implements Serializable, UserDetails {
+    private static final long serialVersionUID = 1L;
     
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -30,19 +29,18 @@ public class Usuario implements Serializable, UserDetails{
 
     @Column(nullable=false, length = 100)
     private String nome;
-    @Column(nullable=false, unique=true)
-    private String email;
+
+    @Column(nullable=false, unique=true, name="username")
+    private String user; // Seu campo de login (username)
+
     @Column(nullable=false)
     private String senha;
 
-    private Boolean gerente = false; //valor padrao
+    private Boolean gerente = false; // valor padrao
 
 
-    //user detail - padrao
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Se o usuário for gerente, ele terá permissões de ADMIN e USER.
-        // Se não for, terá apenas permissão de USER.
         if (Boolean.TRUE.equals(this.gerente)) {
             return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"));
         }
@@ -51,33 +49,31 @@ public class Usuario implements Serializable, UserDetails{
 
     @Override
     public String getPassword() {
-        // O Spring Security chama getPassword(), mas retorna o seu atributo 'senha'
         return this.senha;
     }
 
     @Override
     public String getUsername() {
-        // O Spring Security chama getUsername(), mas retorna o seu atributo 'email'
-        return this.email;
+        return this.user; 
     }
 
     @Override
     public boolean isAccountNonExpired() {
-        return true; // Conta ativa e não expirada
+        return true; 
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        return true; // Conta não bloqueada
+        return true; 
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return true; // Credenciais válidas
+        return true; 
     }
 
     @Override
     public boolean isEnabled() {
-        return true; // Usuário ativo
+        return true; 
     }
 }

@@ -1,14 +1,16 @@
 package com.projeto.petitrose.repositories;
 
+import com.projeto.petitrose.models.Usuario;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import java.util.UUID;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.security.core.userdetails.UserDetails;
+public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
 
-import com.projeto.petitrose.models.Usuario;
+    @Query("SELECT u FROM Usuario u WHERE u.user = :login")
+    Usuario findByUser(@Param("login") String login);
 
-public interface UsuarioRepository extends JpaRepository<Usuario, UUID>{
-    
-    UserDetails findByEmail(String email);
-    boolean existsByEmail(String email);
+    @Query("SELECT COUNT(u) > 0 FROM Usuario u WHERE u.user = :login")
+    boolean existsByUser(@Param("login") String login);
 }
