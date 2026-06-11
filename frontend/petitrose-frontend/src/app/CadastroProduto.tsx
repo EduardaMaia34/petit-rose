@@ -19,13 +19,13 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
     const [valor, setValor] = useState('');
     const [descricao, setDescricao] = useState('');
     const [categoriaId, setCategoriaId] = useState('');
+    const [imagemUrl, setImagemUrl] = useState('');
     const [categorias, setCategorias] = useState<Categoria[]>([]);
+    const [carregandoImagem, setCarregandoImagem] = useState(false);
 
-    // Carrega as categorias do banco de dados ao abrir o modal
     useEffect(() => {
         const carregarCategorias = async () => {
             try {
-                // Altere para a sua rota real de categorias se for diferente de '/categorias'
                 const response = await api.get('/categorias');
                 setCategorias(response.data);
             } catch (error) {
@@ -40,6 +40,27 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
 
     if (!isOpen) return null;
 
+    const handleUploadImagem = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+
+        const arquivo = e.target.files[0];
+        const formData = new FormData();
+        formData.append('imagem', arquivo);
+
+        try {
+            setCarregandoImagem(true);
+            const response = await api.post('/produtos/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            setImagemUrl(response.data.nomeArquivo);
+            Swal.fire('Sucesso', 'Imagem enviada com sucesso!', 'success');
+        } catch (error) {
+            Swal.fire('Erro', 'Falha ao processar o upload da imagem.', 'error');
+        } finally {
+            setCarregandoImagem(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -52,23 +73,23 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
             await api.post('/produtos', {
                 nome: nome,
                 valor: parseFloat(valor),
-                // Como o DTO tem @NotBlank na descrição, garantimos que não vá vazia
                 descricao: descricao.trim() === '' ? 'Sem descrição fornecida.' : descricao,
-                categoriaId: categoriaId
+                categoriaId: categoriaId,
+                imagemUrl: imagemUrl // Vincula o arquivo retornado do backend
             });
 
             Swal.fire('Sucesso!', 'Produto cadastrado com sucesso!', 'success');
 
-            // Limpa o estado
             setNome('');
             setValor('');
             setDescricao('');
             setCategoriaId('');
+            setImagemUrl('');
 
             onSucesso();
             onClose();
         } catch (error) {
-            Swal.fire('Erro', 'Não foi possível cadastrar o produto. Verifique os dados.', 'error');
+            Swal.fire('Erro', 'Não foi possível cadastrar o produto.', 'error');
         }
     };
 
@@ -100,22 +121,31 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
                         />
                     </div>
 
-                    {/* NOVA CAIXA DE SELEÇÃO DE CATEGORIAS */}
                     <div className="form-group">
                         <label>Categoria *</label>
                         <select
                             value={categoriaId}
                             onChange={(e) => setCategoriaId(e.target.value)}
                             required
-                            style={selectStyle}
                         >
                             <option value="">Selecione uma categoria...</option>
                             {categorias.map((cat) => (
-                                <option key={cat.id} value={cat.id}>
-                                    {cat.nome}
-                                </option>
+                                <option key={cat.id} value={cat.id}>{cat.nome}</option>
                             ))}
                         </select>
+                    </div>
+
+                    {/* CAMPO DE SELEÇÃO DE IMAGEM */}
+                    <div className="form-group">
+                        <label>Foto do Produto</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleUploadImagem}
+                            style={{ padding: '8px' }}
+                        />
+                        {carregandoImagem && <p style={{ fontSize: '12px', color: 'var(--vinho-texto)' }}>Carregando arquivo...</p>}
+                        {imagemUrl && <p style={{ fontSize: '12px', color: 'green' }}>✓ Imagem pronta para salvar ({imagemUrl.substring(0,20)}...)</p>}
                     </div>
 
                     <div className="form-group">
@@ -124,13 +154,13 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
                             rows={3}
                             value={descricao}
                             onChange={(e) => setDescricao(e.target.value)}
-                            placeholder="Escreva detalhes sobre o produto..."
+                            placeholder="Detalhes opcionais..."
                             required
                         />
                     </div>
 
                     <div style={{ display: 'flex', gap: '15px', marginTop: '25px' }}>
-                        <button type="submit" className="btn" style={{ flex: 1 }}>Salvar Produto</button>
+                        <button type="submit" className="btn" style={{ flex: 1 }} disabled={carregandoImagem}>Salvar Produto</button>
                         <button type="button" className="btn-voltar" style={{ flex: 1 }} onClick={onClose}>
                             Cancelar
                         </button>
@@ -149,9 +179,4 @@ const modalOverlayStyle: React.CSSProperties = {
 
 const modalContainerStyle: React.CSSProperties = {
     margin: 0, width: '100%', maxWidth: '600px', boxShadow: '0 8px 30px rgba(0,0,0,0.2)'
-};
-
-const selectStyle: React.CSSProperties = {
-    width: '100%', padding: '10px', borderRadius: '5px',
-    border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '14px'
 };

@@ -20,16 +20,16 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
     const [valor, setValor] = useState('');
     const [descricao, setDescricao] = useState('');
     const [categoriaId, setCategoriaId] = useState('');
+    const [imagemUrl, setImagemUrl] = useState('');
     const [categorias, setCategorias] = useState<Categoria[]>([]);
+    const [carregandoImagem, setCarregandoImagem] = useState(false);
 
     useEffect(() => {
         const carregarDadosEDependencias = async () => {
             try {
-                // 1. Busca todas as categorias para preencher o select
                 const responseCategorias = await api.get('/categorias');
                 setCategorias(responseCategorias.data);
 
-                // 2. Busca o produto específico para editar
                 const responseProduto = await api.get(`/produtos/${produtoId}`);
                 setNome(responseProduto.data.nome);
 
@@ -40,8 +40,8 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
                 }
 
                 setDescricao(responseProduto.data.descricao || '');
+                setImagemUrl(responseProduto.data.imagemUrl || '');
 
-                // Vincula o ID da categoria atual do produto para selecioná-la no <select>
                 if (responseProduto.data.categoria) {
                     setCategoriaId(responseProduto.data.categoria.id);
                 }
@@ -59,6 +59,27 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
 
     if (!isOpen || !produtoId) return null;
 
+    const handleUploadImagem = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+
+        const arquivo = e.target.files[0];
+        const formData = new FormData();
+        formData.append('imagem', arquivo);
+
+        try {
+            setCarregandoImagem(true);
+            const response = await api.post('/produtos/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            setImagemUrl(response.data.nomeArquivo);
+            Swal.fire('Sucesso', 'Nova imagem enviada com sucesso!', 'success');
+        } catch (error) {
+            Swal.fire('Erro', 'Falha ao processar o upload da imagem.', 'error');
+        } finally {
+            setCarregandoImagem(false);
+        }
+    };
+
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -72,7 +93,8 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
                 nome: nome,
                 valor: parseFloat(valor),
                 descricao: descricao.trim() === '' ? 'Sem descrição fornecida.' : descricao,
-                categoriaId: categoriaId
+                categoriaId: categoriaId,
+                imagemUrl: imagemUrl
             });
 
             Swal.fire('Sucesso!', 'Produto atualizado com sucesso!', 'success');
@@ -109,22 +131,29 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
                         />
                     </div>
 
-                    {/* CAIXA DE SELEÇÃO DE CATEGORIAS NA EDIÇÃO */}
                     <div className="form-group">
                         <label>Categoria *</label>
                         <select
                             value={categoriaId}
                             onChange={(e) => setCategoriaId(e.target.value)}
                             required
-                            style={selectStyle}
                         >
                             <option value="">Selecione uma categoria...</option>
                             {categorias.map((cat) => (
-                                <option key={cat.id} value={cat.id}>
-                                    {cat.nome}
-                                </option>
+                                <option key={cat.id} value={cat.id}>{cat.nome}</option>
                             ))}
                         </select>
+                    </div>
+
+                    <div className="form-group">
+                        <label>Nova Foto do Produto</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleUploadImagem}
+                            style={{ padding: '8px' }}
+                        />
+                        {carregandoImagem && <p style={{ fontSize: '12px' }}>Carregando arquivo...</p>}
                     </div>
 
                     <div className="form-group">
@@ -138,7 +167,7 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
                     </div>
 
                     <div style={{ display: 'flex', gap: '15px', marginTop: '25px' }}>
-                        <button type="submit" className="btn" style={{ flex: 1 }}>Atualizar Dados</button>
+                        <button type="submit" className="btn" style={{ flex: 1 }} disabled={carregandoImagem}>Atualizar Dados</button>
                         <button type="button" className="btn-voltar" style={{ flex: 1 }} onClick={onClose}>
                             Voltar
                         </button>
@@ -157,9 +186,4 @@ const modalOverlayStyle: React.CSSProperties = {
 
 const modalContainerStyle: React.CSSProperties = {
     margin: 0, width: '100%', maxWidth: '600px', boxShadow: '0 8px 30px rgba(0,0,0,0.2)'
-};
-
-const selectStyle: React.CSSProperties = {
-    width: '100%', padding: '10px', borderRadius: '5px',
-    border: '1px solid #ccc', backgroundColor: '#fff', fontSize: '14px'
 };

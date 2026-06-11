@@ -31,6 +31,9 @@ public class Produto implements Serializable {
     @Column(nullable = false, length = 255)
     private String descricao;
 
+    @Column(nullable = true, length = 255)
+    private String imagemUrl;
+
     @ManyToOne
     @JoinColumn(name = "categoria_id", nullable = false)
     private Categoria categoria;

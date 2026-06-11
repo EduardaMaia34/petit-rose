@@ -34,6 +34,8 @@ public class SecurityConfigurations {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        .requestMatchers("/uploads/**").permitAll()
+
                         // Rotas de Usuários e Produtos
                         .requestMatchers(HttpMethod.POST, "/usuarios/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/usuarios/register").permitAll()
@@ -43,7 +45,7 @@ public class SecurityConfigurations {
                         .requestMatchers(HttpMethod.PUT, "/produtos/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/produtos/**").permitAll()
 
-                        // 🔍 CORREÇÃO: Liberando as rotas de categorias para teste e uso no front
+                        // Liberando as rotas de categorias para teste e uso no front
                         .requestMatchers(HttpMethod.GET, "/categorias/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/categorias/**").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/categorias/**").permitAll()

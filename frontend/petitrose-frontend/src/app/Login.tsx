@@ -6,7 +6,8 @@ import '../index.css';
 import logoPetitRose from '../assets/Logo.png';
 
 export const Login = () => {
-    const [email, setEmail] = useState('');
+    // Declarado como 'user' para bater com o input e com o Spring Security
+    const [user, setUser] = useState('');
     const [senha, setSenha] = useState('');
     const [mostrarSenha, setMostrarSenha] = useState(false);
     const navigate = useNavigate();
@@ -15,8 +16,9 @@ export const Login = () => {
         e.preventDefault();
 
         try {
+            // Enviando 'user' e 'senha' exatamente como o Spring Boot espera receber no seu DTO de autenticação
             const response = await axios.post('http://localhost:8081/usuarios/login', {
-                email: email,
+                user: user,
                 senha: senha
             });
 
@@ -51,24 +53,25 @@ export const Login = () => {
                         <img src={logoPetitRose} className="logo-img" alt="Logo Petit Rose" />
                     </div>
                     <form className="login-form" onSubmit={handleLogin}>
-                        {/* Input de E-mail padrão */}
+                        {/* Input de Usuário sincronizado perfeitamente com o estado */}
                         <div className="input-group">
                             <input
-                                type="email"
-                                placeholder="E-mail"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                type="text"
+                                placeholder="Nome de usuário"
+                                value={user}
+                                onChange={(e) => setUser(e.target.value)}
                                 required
                             />
                         </div>
 
-                        {/* Input de Senha Estruturado para o Design da Imagem */}
+                        {/* Input de Senha com o Botão do Olho */}
                         <div className="input-group">
                             <input
                                 type={mostrarSenha ? "text" : "password"}
                                 placeholder="Senha"
                                 value={senha}
                                 onChange={(e) => setSenha(e.target.value)}
+                                style={{ paddingRight: '75px' }}
                                 required
                             />
                             <button
