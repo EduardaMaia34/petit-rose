@@ -33,6 +33,6 @@ public class Comanda implements Serializable {
     private MetodoPagamento metodoPagamento;
 
     //uma comanda pode ter vários pedidos
-    @OneToMany(mappedBy = "comanda", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "comanda", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<Pedido> pedidos;
 }

@@ -11,7 +11,7 @@ import com.projeto.petitrose.models.Pedido;
 import com.projeto.petitrose.repositories.ComandaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // Import adicionado
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -48,7 +48,8 @@ public class ComandaService {
         return converterParaDTO(comanda);
     }
 
-    // fechar comanda individual
+    // fechar comanda individual removendo o vínculo dos pedidos
+    @Transactional
     public void fecharComanda(UUID id, MetodoPagamento metodoPagamento) {
         Comanda comanda = comandaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Comanda não encontrada"));
@@ -64,6 +65,15 @@ public class ComandaService {
         comanda.setAberta(false);
         comanda.setDataFechamento(LocalDateTime.now());
         comanda.setMetodoPagamento(metodoPagamento);
+
+        // --- MECANISMO DE DESVINCULAÇÃO ---
+        if (comanda.getPedidos() != null && !comanda.getPedidos().isEmpty()) {
+            // Remove o vínculo apontando a comanda de cada pedido para NULL
+            comanda.getPedidos().forEach(pedido -> pedido.setComanda(null));
+            // Limpa a lista da comanda para refletir no banco de dados que ela esvaziou
+            comanda.getPedidos().clear();
+        }
+        // -----------------------------------
 
         comandaRepository.save(comanda);
     }
@@ -88,7 +98,7 @@ public class ComandaService {
                 .collect(Collectors.toList());
     }
 
-    // Método de Checkout / Pagamento de múltiplas comandas combinado
+    
     @Transactional
     public CheckoutResponseDTO processarPagamento(CheckoutRequestDTO request) {
         List<Comanda> comandas = comandaRepository.findAllById(request.comandaIds());
@@ -97,7 +107,7 @@ public class ComandaService {
             throw new IllegalArgumentException("Nenhuma comanda encontrada para os IDs fornecidos.");
         }
 
-        // Calcula o total somando os pedidos de cada uma das comandas encontradas
+        
         BigDecimal totalGeral = comandas.stream()
                 .map(comanda -> {
                     if (comanda.getPedidos() == null) return BigDecimal.ZERO;
@@ -107,7 +117,7 @@ public class ComandaService {
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // Consolida os itens de todas as comandas agrupando por Produto
+        
         List<ItemConsolidadoDTO> itensConsolidados = comandas.stream()
                 .filter(comanda -> comanda.getPedidos() != null)
                 .flatMap(comanda -> comanda.getPedidos().stream())
@@ -120,7 +130,7 @@ public class ComandaService {
                                 list -> {
                                     var primeiroItem = list.get(0);
                                     int qtdTotal = list.stream().mapToInt(item -> item.getQuantidade()).sum();
-                                    return new ItemConsolidadoDTO( // Nome do DTO corrigido para PT-BR
+                                    return new ItemConsolidadoDTO(
                                             primeiroItem.getProduto().getId(),
                                             primeiroItem.getProduto().getNome(),
                                             qtdTotal,
@@ -133,12 +143,16 @@ public class ComandaService {
                 .stream()
                 .collect(Collectors.toList());
 
-        // Atualiza o status de todas as comandas utilizando o padrão da sua entidade
         comandas.forEach(comanda -> {
             comanda.setAberta(false);
             comanda.setDataFechamento(LocalDateTime.now());
-            // Se o CheckoutRequestDTO receber o método de pagamento, você pode mapear aqui:
-            // comanda.setMetodoPagamento(request.metodoPagamento()); 
+            
+            // desvincula pedidos de comanda quando ela fecha
+            if (comanda.getPedidos() != null && !comanda.getPedidos().isEmpty()) {
+                comanda.getPedidos().forEach(pedido -> pedido.setComanda(null));
+                comanda.getPedidos().clear();
+            }
+            
         });
         
         comandaRepository.saveAll(comandas);

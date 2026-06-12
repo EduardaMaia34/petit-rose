@@ -62,4 +62,18 @@ public class PedidoController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping
+    public ResponseEntity<List<Pedido>> listarTodosPedidos() {
+        // Certifique-se de que o seu pedidoService tem o método listarTodos() implementado
+        List<Pedido> pedidos = pedidoService.listarTodos(); 
+        return ResponseEntity.ok(pedidos);
+    }
+
+
+    @GetMapping("/{pedidoId}")
+    public ResponseEntity<Pedido> buscarPedidoPorId(@PathVariable UUID pedidoId) {
+        Pedido pedido = pedidoService.buscarPorId(pedidoId);
+        return ResponseEntity.ok(pedido);
+    }
+
 }
