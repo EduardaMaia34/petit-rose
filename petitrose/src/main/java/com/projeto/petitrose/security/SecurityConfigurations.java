@@ -64,6 +64,12 @@ public class SecurityConfigurations {
                         .requestMatchers("/comandas/**").permitAll()
                         .requestMatchers("/pedidos/**").permitAll()
 
+                        .requestMatchers(HttpMethod.POST, "/insumos").permitAll()
+                        .requestMatchers("/insumos/**").permitAll()
+                        .requestMatchers("/estoque/**").permitAll()
+                        .requestMatchers("/insumos").permitAll()
+                        .requestMatchers("/estoque").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
