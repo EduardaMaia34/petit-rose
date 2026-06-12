@@ -56,6 +56,11 @@ public class SecurityConfigurations {
                         .requestMatchers(HttpMethod.PUT, "/categorias/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/categorias/**").permitAll()
 
+                        .requestMatchers(HttpMethod.GET, "/comandas/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/comandas/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/comandas/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/comandas/**").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

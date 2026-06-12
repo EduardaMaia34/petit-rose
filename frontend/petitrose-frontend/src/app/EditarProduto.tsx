@@ -26,7 +26,6 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
     const [novaImagemFile, setNovaImagemFile] = useState<File | null>(null);
     const [previewNovaImagem, setPreviewNovaImagem] = useState<string | null>(null);
 
-    // Carrega a lista de categorias e os dados do produto em edição
     useEffect(() => {
         if (isOpen) {
             const carregarCategorias = async () => {
@@ -110,23 +109,23 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
 
     return (
         <div style={modalOverlayStyle}>
-            <div className="form-produto-container" style={modalContainerStyle}>
+            {/* O Modal voltou ao tamanho normal (maxWidth: 550px) e com rolagem caso a tela seja muito baixa */}
+            <div className="form-produto-container" style={{ ...modalContainerStyle, maxHeight: '90vh', overflowY: 'auto' }}>
                 <h2>Editar Produto - Petit Rose</h2>
 
                 <form onSubmit={handleSubmit}>
-                    <div className="form-group">
+                    <div className="form-group" style={{ marginBottom: '15px' }}>
                         <label>Nome do Produto *</label>
                         <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} required />
                     </div>
 
-                    {/* PREÇO E CATEGORIA LADO A LADO */}
-                    <div style={{ display: 'flex', gap: '15px' }}>
-                        <div className="form-group" style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', gap: '15px', marginBottom: '15px' }}>
+                        <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
                             <label>Preço (R$) *</label>
                             <input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} required />
                         </div>
 
-                        <div className="form-group" style={{ flex: 1 }}>
+                        <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
                             <label>Categoria *</label>
                             <select
                                 value={categoriaId}
@@ -141,35 +140,41 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
                         </div>
                     </div>
 
-                    <div className="form-group">
+                    <div className="form-group" style={{ marginBottom: '15px' }}>
                         <label>Imagem do Produto</label>
 
                         {previewNovaImagem ? (
-                            <div style={{ textAlign: 'center', border: '2px dashed #fbbfc5', padding: '10px', borderRadius: 'var(--radius-p)' }}>
-                                <span style={{ fontSize: '12px', color: 'var(--vinho-texto)', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Nova imagem selecionada:</span>
+                            <div style={containerFotoPequenaStyle}>
                                 <img src={previewNovaImagem} alt="Nova Preview" style={imgCardStyle} />
-                                <button type="button" onClick={handleRemoverImagemCompleta} className="btn-deletar" style={{ padding: '4px 12px', fontSize: '12px' }}>
+                                <button
+                                    type="button"
+                                    onClick={handleRemoverImagemCompleta}
+                                    style={{ ...btnAcaoImagemStyle, backgroundColor: 'var(--vinho-texto)', width: '120px' }}
+                                >
                                     Remover Foto
                                 </button>
                             </div>
                         ) : (
                             imagemAtualUrl ? (
-                                <div style={{ textAlign: 'center', border: '1px solid var(--rosa-escuro)', padding: '10px', borderRadius: 'var(--radius-p)' }}>
-                                    <span style={{ fontSize: '12px', color: '#999', display: 'block', marginBottom: '5px' }}>Imagem cadastrada atual:</span>
+                                <div style={containerFotoPequenaStyle}>
                                     <img src={`http://localhost:8081/uploads/${imagemAtualUrl}`} alt="Atual" style={imgCardStyle} />
 
-                                    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                                        <label style={{ ...btnUploadRosaStyle, padding: '5px 12px', fontSize: '12px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, width: '100%' }}>
+                                        <label style={{ ...btnAcaoImagemStyle, ...btnUploadRosaStyle, width: '100%' }}>
                                             Alterar Foto
                                             <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                                         </label>
-                                        <button type="button" onClick={handleRemoverImagemCompleta} className="btn-deletar" style={{ padding: '5px 12px', fontSize: '12px' }}>
+                                        <button
+                                            type="button"
+                                            onClick={handleRemoverImagemCompleta}
+                                            style={{ ...btnAcaoImagemStyle, backgroundColor: 'var(--vinho-texto)', width: '100%' }}
+                                        >
                                             Remover Foto
                                         </button>
                                     </div>
                                 </div>
                             ) : (
-                                <label style={btnUploadRosaStyle}>
+                                <label style={{ ...btnUploadRosaStyle, display: 'block', padding: '12px', textAlign: 'center', borderRadius: 'var(--radius-p)', cursor: 'pointer', fontWeight: 'bold' }}>
                                     + Adicionar Foto
                                     <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                                 </label>
@@ -177,7 +182,7 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
                         )}
                     </div>
 
-                    <div className="form-group">
+                    <div className="form-group" style={{ marginBottom: '15px' }}>
                         <label>Descrição *</label>
                         <textarea rows={3} value={descricao} onChange={(e) => setDescricao(e.target.value)} required />
                     </div>
@@ -196,25 +201,53 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
     );
 };
 
+/* ESTILOS */
+
 const modalOverlayStyle: React.CSSProperties = {
     position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
     backgroundColor: 'rgba(0, 0, 0, 0.4)', display: 'flex', justifyContent: 'center',
-    alignItems: 'center', zIndex: 2000
+    alignItems: 'center', zIndex: 2000, padding: '20px', boxSizing: 'border-box'
 };
 
 const modalContainerStyle: React.CSSProperties = {
-    margin: 0, width: '100%', boxShadow: '0 8px 30px rgba(0,0,0,0.2)'
+    margin: 0, width: '100%', maxWidth: '550px', boxShadow: '0 8px 30px rgba(0,0,0,0.2)'
 };
 
 const btnUploadRosaStyle: React.CSSProperties = {
-    display: 'block', backgroundColor: 'var(--rosa-principal)', color: 'var(--vinho-texto)', padding: '12px',
-    borderRadius: 'var(--radius-p)', textAlign: 'center', cursor: 'pointer', fontWeight: 'bold'
+    backgroundColor: 'var(--rosa-principal)', color: 'var(--vinho-texto)'
 };
 
+const btnAcaoImagemStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    color: '#fff',
+    padding: '6px 12px',
+    borderRadius: 'var(--radius-p)',
+    textAlign: 'center',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    fontSize: '13px',
+    border: 'none',
+    height: '34px',
+    boxSizing: 'border-box'
+};
+
+// NOVO: Container compacto para a foto e botões ficarem alinhados de forma discreta
+const containerFotoPequenaStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px',
+    border: '1px solid var(--rosa-escuro)',
+    padding: '10px',
+    borderRadius: 'var(--radius-p)',
+    backgroundColor: '#fff'
+};
+
+// NOVO: A foto agora é menor e fica no cantinho esquerdo do container
 const imgCardStyle: React.CSSProperties = {
-    width: '100%',
-    height: '220px',
+    width: '100px',
+    height: '80px',
     objectFit: 'cover',
-    borderRadius: '15px',
-    marginBottom: '10px'
+    borderRadius: '6px'
 };

@@ -8,6 +8,11 @@ import { ListaProdutos } from './app/ListaProdutos';
 import { CadastroProduto } from './app/CadastroProduto';
 import { EditarProduto } from './app/EditarProduto';
 import { Catalogo } from './app/Catalogo';
+import { DashboardFinanceiro } from './app/DashboardFinanceiro';
+import { ControleEstoque } from './app/ControleEstoque';
+import { Relatorios } from './app/Relatorios';
+import { AtendimentoBalcao } from './app/AtendimentoBalcao';
+import { GerenciamentoMesas } from './app/GerenciamentoMesas';
 
 import './index.css';
 

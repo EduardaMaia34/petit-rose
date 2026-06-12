@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 import { api } from './api';
 import { Navbar } from './Navbar';
@@ -17,25 +17,30 @@ interface ProdutoCatalogo {
     descricao: string;
     imagemUrl: string;
     nomeCategoria?: string;
-    categoria?: Categoria; // Mapeamento do objeto categoria se vier do backend
-    categoriaId?: string;  // Fallback caso venha como string direta
+    categoria?: Categoria;
+    categoriaId?: string;
     catalogoAtivo: boolean;
 }
 
 export const Catalogo = () => {
     const [produtos, setProdutos] = useState<ProdutoCatalogo[]>([]);
-    const [modoEdicao, setModoEdicao] = useState<boolean>(false);
+    const [categorias, setCategorias] = useState<Categoria[]>([]);
     const [carregando, setCarregando] = useState<boolean>(true);
+    const [modoEdicao, setModoEdicao] = useState<boolean>(false);
 
-    const buscarProdutos = async () => {
+    const buscarDados = async () => {
         try {
             setCarregando(true);
-            const response = await api.get('/produtos');
-            setProdutos(response.data);
+            const [responseProdutos, responseCategorias] = await Promise.all([
+                api.get('/produtos'),
+                api.get('/categorias')
+            ]);
+            setProdutos(responseProdutos.data);
+            setCategorias(responseCategorias.data);
         } catch (error) {
             Swal.fire({
                 title: 'Erro!',
-                text: 'Não foi possível carregar os produtos do catálogo.',
+                text: 'Não foi possível carregar os dados do catálogo.',
                 icon: 'error',
                 confirmButtonColor: '#600000'
             });
@@ -45,7 +50,7 @@ export const Catalogo = () => {
     };
 
     useEffect(() => {
-        buscarProdutos();
+        buscarDados();
     }, []);
 
     const handleAlternarStatus = async (id: string, statusAtual: boolean) => {
@@ -53,7 +58,6 @@ export const Catalogo = () => {
             const produtoAlterado = produtos.find(p => p.id === id);
             if (!produtoAlterado) return;
 
-            // 🔥 CORREÇÃO CRÍTICA: Descobre o ID da categoria que veio do backend
             const idDaCategoria = produtoAlterado.categoriaId || produtoAlterado.categoria?.id;
 
             if (!idDaCategoria) {
@@ -61,17 +65,15 @@ export const Catalogo = () => {
                 return;
             }
 
-            // 🔥 O PUT agora envia o 'categoriaId' exigido pelo seu ProdutoDTO!
             await api.put(`/produtos/${id}`, {
                 nome: produtoAlterado.nome,
                 valor: produtoAlterado.valor,
                 descricao: produtoAlterado.descricao,
                 imagemUrl: produtoAlterado.imagemUrl,
-                catalogoAtivo: !statusAtual, // Inverte o estado
-                categoriaId: idDaCategoria  // Passa o UUID que o Spring valida com @NotNull
+                catalogoAtivo: !statusAtual,
+                categoriaId: idDaCategoria
             });
 
-            // Atualiza o estado local para mudar a opacidade na tela imediatamente
             setProdutos(prev =>
                 prev.map(p => p.id === id ? { ...p, catalogoAtivo: !statusAtual } : p)
             );
@@ -94,7 +96,7 @@ export const Catalogo = () => {
         }
     };
 
-    const produtosFiltrados = modoEdicao
+    const produtosBase = modoEdicao
         ? produtos
         : produtos.filter(p => p.catalogoAtivo);
 
@@ -106,7 +108,7 @@ export const Catalogo = () => {
                 <div className="container-header">
                     <div>
                         <h2>Catálogo de Doces</h2>
-                        <p>{modoEdicao ? 'Modo de Edição: Ative ou desative produtos no menu do cliente.' : 'Visão atual do cliente na Petit Rose.'}</p>
+                        <p>{modoEdicao ? 'Modo de Edição: Ative ou desative produtos no menu do cliente.' : 'Produtos disponíveis no momento.'}</p>
                     </div>
 
                     <button
@@ -123,63 +125,99 @@ export const Catalogo = () => {
                         Carregando delícias...
                     </div>
                 ) : (
-                    <div className="pedidos-grid">
-                        {produtosFiltrados.length === 0 ? (
-                            <p style={{ textAlign: 'center', gridColumn: '1 / -1', color: '#8b0000', fontStyle: 'italic' }}>
+                    <div>
+                        {produtosBase.length === 0 ? (
+                            <p style={{ textAlign: 'center', color: '#8b0000', fontStyle: 'italic', padding: '40px' }}>
                                 Nenhum produto encontrado para esta exibição.
                             </p>
                         ) : (
-                            produtosFiltrados.map((produto) => (
-                                <div
-                                    key={produto.id}
-                                    className="pedido-card"
-                                    style={{
-                                        opacity: produto.catalogoAtivo ? 1 : 0.45,
-                                        transition: 'opacity 0.3s ease, transform 0.2s ease',
-                                        border: produto.catalogoAtivo ? '2px solid #fbbfc5' : '2px dashed #600000'
-                                    }}
-                                >
-                                    <div>
-                                        <div className="pedido-meta">
-                                            <p style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>
-                                                {produto.nomeCategoria || produto.categoria?.nome || 'Doce'}
-                                            </p>
-                                            <p style={{ fontWeight: 'bold', color: '#600000' }}>
-                                                {produto.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                            </p>
-                                        </div>
+                            // Renderiza os blocos divididos por Categoria no Catálogo
+                            categorias.map((cat) => {
+                                const produtosDaCategoria = produtosBase.filter(
+                                    p => p.categoria?.id === cat.id || p.categoriaId === cat.id
+                                );
 
-                                        <div style={{ width: '100%', height: '180px', overflow: 'hidden', borderRadius: '12px', marginBottom: '15px', backgroundColor: '#fff' }}>
-                                            <img
-                                                src={produto.imagemUrl ? `http://localhost:8081/uploads/${produto.imagemUrl}` : 'https://placehold.co/300x180?text=Petit+Rose'}
-                                                alt={produto.nome}
-                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                            />
-                                        </div>
+                                if (produtosDaCategoria.length === 0) return null;
 
-                                        <h3 style={{ margin: '0 0 10px 0', color: '#600000', fontSize: '20px', fontFamily: 'Abhaya Libre, serif' }}>
-                                            {produto.nome}
+                                return (
+                                    <div key={cat.id} style={{ marginBottom: '50px' }}>
+                                        <h3 style={{
+                                            color: '#600000',
+                                            borderBottom: '2px solid #fbbfc5',
+                                            paddingBottom: '10px',
+                                            marginBottom: '25px',
+                                            textTransform: 'uppercase',
+                                            fontFamily: 'Abhaya Libre, serif',
+                                            fontSize: '24px',
+                                            letterSpacing: '1px'
+                                        }}>
+                                            {cat.nome || cat.name}
                                         </h3>
 
-                                        <p className="observacoes" style={{ minHeight: '40px', marginBottom: '15px' }}>
-                                            {produto.descricao}
-                                        </p>
-                                    </div>
+                                        <div className="pedidos-grid">
+                                            {produtosDaCategoria.map((produto) => (
+                                                <div
+                                                    key={produto.id}
+                                                    className="pedido-card"
+                                                    style={{
+                                                        opacity: produto.catalogoAtivo ? 1 : 0.45,
+                                                        transition: 'opacity 0.3s ease, transform 0.2s ease',
+                                                        border: produto.catalogoAtivo ? '2px solid #fbbfc5' : '2px dashed #600000',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        justifyContent: 'space-between'
+                                                    }}
+                                                >
+                                                    <div>
+                                                        {/* ALTERAÇÃO: Nome do produto na parte superior */}
+                                                        <h3 style={{
+                                                            margin: '0 0 5px 0',
+                                                            color: '#600000',
+                                                            fontSize: '22px',
+                                                            fontFamily: 'Abhaya Libre, serif',
+                                                            lineHeight: '1.2'
+                                                        }}>
+                                                            {produto.nome}
+                                                        </h3>
 
-                                    {modoEdicao && (
-                                        <div className="status-area" style={{ borderTop: '1px dashed #ffd7c9', paddingTop: '15px', marginTop: '10px' }}>
-                                            <button
-                                                type="button"
-                                                className={produto.catalogoAtivo ? 'status-btn-em-preparo' : 'status-btn-pagamento'}
-                                                onClick={() => handleAlternarStatus(produto.id, produto.catalogoAtivo)}
-                                                style={{ width: '100%', textAlign: 'center' }}
-                                            >
-                                                {produto.catalogoAtivo ? ' Remover do Catálogo' : ' Ativar no Catálogo'}
-                                            </button>
+                                                        {/* ALTERAÇÃO: Preço logo abaixo do nome (Categoria removida) */}
+                                                        <div style={{ marginBottom: '15px' }}>
+                                                            <span style={{ fontWeight: 'bold', color: '#8b0000', fontSize: '16px' }}>
+                                                                {produto.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                                            </span>
+                                                        </div>
+
+                                                        <div style={{ width: '100%', height: '180px', overflow: 'hidden', borderRadius: '12px', marginBottom: '15px', backgroundColor: '#fff' }}>
+                                                            <img
+                                                                src={produto.imagemUrl ? `http://localhost:8081/uploads/${produto.imagemUrl}` : 'https://placehold.co/300x180?text=Petit+Rose'}
+                                                                alt={produto.nome}
+                                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                            />
+                                                        </div>
+
+                                                        <p className="observacoes" style={{ minHeight: '40px', marginBottom: '15px' }}>
+                                                            {produto.descricao}
+                                                        </p>
+                                                    </div>
+
+                                                    {modoEdicao && (
+                                                        <div className="status-area" style={{ borderTop: '1px dashed #ffd7c9', paddingTop: '15px', marginTop: '10px' }}>
+                                                            <button
+                                                                type="button"
+                                                                className={produto.catalogoAtivo ? 'status-btn-em-preparo' : 'status-btn-pagamento'}
+                                                                onClick={() => handleAlternarStatus(produto.id, produto.catalogoAtivo)}
+                                                                style={{ width: '100%', textAlign: 'center' }}
+                                                            >
+                                                                {produto.catalogoAtivo ? ' Remover do Catálogo' : ' Ativar no Catálogo'}
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
                                         </div>
-                                    )}
-                                </div>
-                            ))
+                                    </div>
+                                );
+                            })
                         )}
                     </div>
                 )}

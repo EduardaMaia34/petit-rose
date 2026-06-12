@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import Swal from 'sweetalert2';
@@ -61,7 +61,7 @@ export const GerenciamentoMesas = () => {
     const carregarMesas = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/api/comandas/ativas');
+            const response = await api.get('/comandas/ativas');
             const mesasBackend = response.data.map((comanda: any) => ({
                 ...comanda,
                 carrinho: []
@@ -77,7 +77,7 @@ export const GerenciamentoMesas = () => {
 
     const abrirMesa = async (numeroMesa: number) => {
         try {
-            await api.post('/api/comandas', { numeroMesa });
+            await api.post('/comandas', { numeroMesa });
             await carregarMesas();
             Swal.fire({ icon: 'success', title: `Mesa ${String(numeroMesa).padStart(2, '0')} aberta!`, confirmButtonColor: '#710100' });
         } catch (error) {
@@ -131,7 +131,7 @@ export const GerenciamentoMesas = () => {
         if (!result.isConfirmed) return;
 
         try {
-            await api.put(`/api/comandas/${mesaSelecionada.id}/fechar`);
+            await api.put(`/comandas/${mesaSelecionada.id}/fechar`);
             await carregarMesas();
             setMesaSelecionada(null);
             setIsModalAberto(false);
@@ -163,7 +163,7 @@ export const GerenciamentoMesas = () => {
 
     return (
         <div className="dashboard-page">
-            <Navbar abaAtiva="pedidos" />
+            <Navbar abaAtiva="mesas"/>
 
             <div className="main-container">
                 <div className="content-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -360,7 +360,7 @@ export const GerenciamentoMesas = () => {
                                 {/* Lista do Carrinho da Mesa */}
                                 <div style={{ borderTop: '2px solid #fff1f1', paddingTop: '15px' }}>
                                     <strong style={{ fontSize: '14px', color: '#6c757d', display: 'block', marginBottom: '10px' }}> Consumo Atual da Comanda:</strong>
-                                    <div style={{小maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
+                                    <div style={{maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
                                         {mesaSelecionada.carrinho.length === 0 ? (
                                             <p style={{ fontSize: '14px', color: '#8c7a7a', fontStyle: 'italic', textAlign: 'center', margin: '20px 0' }}>Nenhum item consumido nesta mesa até o momento.</p>
                                         ) : (
