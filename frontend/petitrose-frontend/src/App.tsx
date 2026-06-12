@@ -24,10 +24,15 @@ function App() {
                 <Route path="/menu-cliente" element={<MenuCliente />} />
                 <Route path="/menu-admin" element={<MenuAdmin />} />
 
-                {/* Rotas de Gerenciamento do Menu Admin */}
                 <Route path="/produtos" element={<ListaProdutos />} />
                 <Route path="/produtos/novo" element={<CadastroProduto />} />
                 <Route path="/produtos/editar/:id" element={<EditarProduto />} />
+                <Route path="/dashboard" element={<MenuAdmin />} />
+                <Route path="/dashboard-financeiro" element={<DashboardFinanceiro />} />
+                <Route path="/controle-estoque" element={<ControleEstoque />} />
+                <Route path="/relatorios" element={<Relatorios />} />
+                <Route path="/atendimento-balcao" element={<AtendimentoBalcao />} />
+                <Route path="/gerenciamento-mesas" element={<GerenciamentoMesas />} />
 
                 {/* 2. Rota adicionada para o Catálogo de Doces */}
                 <Route path="/catalogo" element={<Catalogo />} />
