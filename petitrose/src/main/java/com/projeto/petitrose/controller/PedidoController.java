@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List; // 🔥 IMPORTANTE
 import java.util.UUID;
 
 @RestController
@@ -16,30 +17,28 @@ public class PedidoController {
     @Autowired
     private PedidoService pedidoService;
 
+    // 🔥 ADICIONE ESTE ENDPOINT QUE ESTAVA FALTANDO PARA A TELA FUNCIONAR
+    @GetMapping
+    public ResponseEntity<List<Pedido>> listarTodos() {
+        List<Pedido> pedidos = pedidoService.listarTodos();
+        return ResponseEntity.ok(pedidos);
+    }
+
     @PostMapping("/comanda/{comandaId}")
     public ResponseEntity<Pedido> criarPedido(@PathVariable UUID comandaId, @RequestBody Pedido novoPedido) {
-
         Pedido pedidoCriado = pedidoService.criarPedidoNaComanda(comandaId, novoPedido);
-
         return ResponseEntity.status(HttpStatus.CREATED).body(pedidoCriado);
     }
 
-
     @PutMapping("/{pedidoId}")
     public ResponseEntity<Pedido> editarPedido(@PathVariable UUID pedidoId, @RequestBody Pedido pedidoAtualizado) {
-
         Pedido pedidoAlterado = pedidoService.editarPedido(pedidoId, pedidoAtualizado);
-
         return ResponseEntity.ok(pedidoAlterado);
     }
 
-
     @DeleteMapping("/{pedidoId}")
     public ResponseEntity<Void> deletarPedido(@PathVariable UUID pedidoId) {
-
         pedidoService.deletarPedido(pedidoId);
-
         return ResponseEntity.noContent().build();
     }
-
 }

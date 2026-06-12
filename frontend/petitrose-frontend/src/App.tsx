@@ -13,6 +13,9 @@ import { ControleEstoque } from './app/ControleEstoque';
 import { Relatorios } from './app/Relatorios';
 import { AtendimentoBalcao } from './app/AtendimentoBalcao';
 import { GerenciamentoMesas } from './app/GerenciamentoMesas';
+import { ListaPedidos } from './app/ListaPedidos';
+import { NovoPedido } from './app/NovoPedido';
+import {EditarPedido} from "./app/EditarPedido.tsx";
 
 import './index.css';
 
@@ -41,6 +44,10 @@ function App() {
 
                 {/* 2. Rota adicionada para o Catálogo de Doces */}
                 <Route path="/catalogo" element={<Catalogo />} />
+
+                <Route path="/pedidos" element={<ListaPedidos />} />
+                <Route path="/pedidos/novo" element={<NovoPedido />} />
+                <Route path="/pedidos/editar/:id" element={<EditarPedido />} />
 
                 {/* Rota de Fallback (Redireciona qualquer URL inválida para o Login) */}
                 <Route path="*" element={<Login />} />

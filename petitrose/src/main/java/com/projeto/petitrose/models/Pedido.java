@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -44,10 +45,11 @@ public class Pedido implements Serializable{
     @JoinColumn(name = "cliente_id", nullable = false)
     private Usuario cliente;
 
-    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL)
-    private List<ItemPedido> itens;
+    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true) // 🔥 Adicionado orphanRemoval
+    private List<ItemPedido> itens; //
 
     @ManyToOne
     @JoinColumn(name = "comanda_id")
+    @JsonIgnoreProperties("pedidos")
     private Comanda comanda;
 }

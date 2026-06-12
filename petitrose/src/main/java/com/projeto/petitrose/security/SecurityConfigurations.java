@@ -61,6 +61,11 @@ public class SecurityConfigurations {
                         .requestMatchers(HttpMethod.PUT, "/comandas/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/comandas/**").permitAll()
 
+                        .requestMatchers(HttpMethod.GET, "/api/pedidos").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/pedidos/comanda/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/pedidos/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/pedidos/**").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
