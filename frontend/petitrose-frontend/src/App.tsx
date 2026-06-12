@@ -8,7 +8,6 @@ import { ListaProdutos } from './app/ListaProdutos';
 import { CadastroProduto } from './app/CadastroProduto';
 import { EditarProduto } from './app/EditarProduto';
 import { DashboardFinanceiro } from './app/DashboardFinanceiro';
-import { CadastroDespesa } from './app/CadastroDespesa';
 import { ControleEstoque } from './app/ControleEstoque';
 import { Relatorios } from './app/Relatorios';
 import { AtendimentoBalcao } from './app/AtendimentoBalcao';
@@ -32,7 +31,6 @@ function App() {
                 <Route path="/produtos/editar/:id" element={<EditarProduto />} />
                 <Route path="/dashboard" element={<MenuAdmin />} />
                 <Route path="/dashboard-financeiro" element={<DashboardFinanceiro />} />
-                <Route path="/cadastro-despesa" element={<CadastroDespesa />} />
                 <Route path="/controle-estoque" element={<ControleEstoque />} />
                 <Route path="/relatorios" element={<Relatorios />} />
                 <Route path="/atendimento-balcao" element={<AtendimentoBalcao />} />
