@@ -2,13 +2,15 @@ package com.projeto.petitrose.service;
 
 import com.projeto.petitrose.dto.ItemVendidoDTO;
 import com.projeto.petitrose.dto.RelatorioFluxoCaixaDTO;
-import com.projeto.petitrose.dto.VendaResumoDTO;
-import com.projeto.petitrose.models.Comanda;
-import com.projeto.petitrose.models.ItemPedido;
-import com.projeto.petitrose.models.Pedido;
-import com.projeto.petitrose.repositories.ComandaRepository;
+import com.projeto.petitrose.dto.TransacaoResponseDTO;
+import com.projeto.petitrose.models.MetodoPagamento;
+import com.projeto.petitrose.models.TipoTransacao;
+import com.projeto.petitrose.models.Transacao;
+import com.projeto.petitrose.repositories.TransacaoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import jakarta.persistence.criteria.Predicate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,91 +21,94 @@ import java.util.stream.Collectors;
 public class RelatorioService {
 
     @Autowired
-    private ComandaRepository comandaRepository;
+    private TransacaoRepository transacaoRepository;
 
     public RelatorioFluxoCaixaDTO gerarRelatorioFluxoCaixa(LocalDateTime inicio, LocalDateTime fim) {
-        // Buscar as comandas fechadas no período
-        List<Comanda> comandas = comandaRepository.findByAbertaFalseAndDataFechamentoBetween(inicio, fim);
+        // Fetch all transactions in the date range
+        Specification<Transacao> spec = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (inicio != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("data"), inicio));
+            }
+            if (fim != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("data"), fim));
+            }
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
 
-        BigDecimal faturamentoTotal = BigDecimal.ZERO;
+        List<Transacao> transacoes = transacaoRepository.findAll(spec);
+
+        BigDecimal totalEntradas = BigDecimal.ZERO;
+        BigDecimal totalSaidas = BigDecimal.ZERO;
+
         Map<String, BigDecimal> faturamentoPorMetodo = new HashMap<>();
+        Map<String, BigDecimal> despesaPorMetodo = new HashMap<>();
 
-        // Inicializar o mapa com todos os métodos de pagamento para garantir que apareçam com valor zero se não houver vendas
-        for (var metodo : com.projeto.petitrose.models.MetodoPagamento.values()) {
+        // Initialize maps with zero for all payment methods
+        for (MetodoPagamento metodo : MetodoPagamento.values()) {
             faturamentoPorMetodo.put(metodo.name(), BigDecimal.ZERO);
+            despesaPorMetodo.put(metodo.name(), BigDecimal.ZERO);
         }
 
-        List<VendaResumoDTO> vendas = new ArrayList<>();
         Map<String, ItemVendidoAcumulador> itensVendidosMap = new HashMap<>();
+        List<TransacaoResponseDTO> transacoesDTOs = new ArrayList<>();
 
-        for (Comanda comanda : comandas) {
-            // Calcular valor total da comanda
-            BigDecimal valorComanda = BigDecimal.ZERO;
-            if (comanda.getPedidos() != null) {
-                valorComanda = comanda.getPedidos().stream()
-                        .map(Pedido::getValorTotal)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-            }
+        for (Transacao transacao : transacoes) {
+            BigDecimal valor = transacao.getValor() != null ? transacao.getValor() : BigDecimal.ZERO;
+            String metodoStr = transacao.getMetodoPagamento() != null ? transacao.getMetodoPagamento().name() : "";
 
-            faturamentoTotal = faturamentoTotal.add(valorComanda);
-
-            // Somar por método de pagamento
-            if (comanda.getMetodoPagamento() != null) {
-                String metodoStr = comanda.getMetodoPagamento().name();
-                BigDecimal atual = faturamentoPorMetodo.getOrDefault(metodoStr, BigDecimal.ZERO);
-                faturamentoPorMetodo.put(metodoStr, atual.add(valorComanda));
-            }
-
-            // Adicionar à lista de vendas individuais
-            vendas.add(new VendaResumoDTO(
-                    comanda.getId(),
-                    comanda.getNumeroMesa(),
-                    comanda.getDataFechamento(),
-                    valorComanda,
-                    comanda.getMetodoPagamento()
+            transacoesDTOs.add(new TransacaoResponseDTO(
+                    transacao.getId(),
+                    transacao.getTipo(),
+                    transacao.getItem(),
+                    valor,
+                    transacao.getData(),
+                    transacao.getMetodoPagamento()
             ));
 
-            // Agrupar itens vendidos
-            if (comanda.getPedidos() != null) {
-                for (Pedido pedido : comanda.getPedidos()) {
-                    if (pedido.getItens() != null) {
-                        for (ItemPedido item : pedido.getItens()) {
-                            if (item.getProduto() != null) {
-                                String nomeProduto = item.getProduto().getNome();
-                                int quant = item.getQuantidade() != null ? item.getQuantidade() : 0;
-                                BigDecimal preco = item.getPrecoUnitario() != null ? item.getPrecoUnitario() : BigDecimal.ZERO;
-                                BigDecimal subtotal = preco.multiply(BigDecimal.valueOf(quant));
+            if (transacao.getTipo() == TipoTransacao.ENTRADA) {
+                totalEntradas = totalEntradas.add(valor);
 
-                                ItemVendidoAcumulador acum = itensVendidosMap.computeIfAbsent(nomeProduto,
-                                        k -> new ItemVendidoAcumulador(nomeProduto));
-                                acum.add(quant, subtotal);
-                            }
-                        }
-                    }
+                if (!metodoStr.isEmpty()) {
+                    faturamentoPorMetodo.put(metodoStr, faturamentoPorMetodo.getOrDefault(metodoStr, BigDecimal.ZERO).add(valor));
+                }
+
+                // Group as sold item
+                String itemNome = transacao.getItem();
+                ItemVendidoAcumulador acum = itensVendidosMap.computeIfAbsent(itemNome, k -> new ItemVendidoAcumulador(itemNome));
+                acum.add(1L, valor);
+            } else if (transacao.getTipo() == TipoTransacao.SAIDA) {
+                totalSaidas = totalSaidas.add(valor);
+
+                if (!metodoStr.isEmpty()) {
+                    despesaPorMetodo.put(metodoStr, despesaPorMetodo.getOrDefault(metodoStr, BigDecimal.ZERO).add(valor));
                 }
             }
         }
 
-        // Converter o mapa de itens vendidos em lista de DTOs ordenada por quantidade decrescente
+        BigDecimal saldo = totalEntradas.subtract(totalSaidas);
+
         List<ItemVendidoDTO> itensMaisVendidos = itensVendidosMap.values().stream()
                 .map(acum -> new ItemVendidoDTO(acum.nomeProduto, acum.quantidade, acum.subtotal))
                 .sorted(Comparator.comparing(ItemVendidoDTO::quantidade).reversed())
                 .collect(Collectors.toList());
 
-        // Ordenar vendas por data de fechamento mais recente
-        vendas.sort(Comparator.comparing(VendaResumoDTO::dataFechamento).reversed());
+        // Sort transactions by date descending (most recent first)
+        transacoesDTOs.sort(Comparator.comparing(TransacaoResponseDTO::data).reversed());
 
         return new RelatorioFluxoCaixaDTO(
                 inicio,
                 fim,
-                faturamentoTotal,
+                totalEntradas,
+                totalSaidas,
+                saldo,
                 faturamentoPorMetodo,
+                despesaPorMetodo,
                 itensMaisVendidos,
-                vendas
+                transacoesDTOs
         );
     }
 
-    // Classe auxiliar interna para agrupar quantidades e subtotais por produto
     private static class ItemVendidoAcumulador {
         final String nomeProduto;
         long quantidade = 0;

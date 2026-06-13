@@ -8,8 +8,11 @@ import java.util.Map;
 public record RelatorioFluxoCaixaDTO(
         LocalDateTime dataInicio,
         LocalDateTime dataFim,
-        BigDecimal faturamentoTotal,
+        BigDecimal totalEntradas,
+        BigDecimal totalSaidas,
+        BigDecimal saldo,
         Map<String, BigDecimal> faturamentoPorMetodoPagamento,
+        Map<String, BigDecimal> despesaPorMetodoPagamento,
         List<ItemVendidoDTO> itensMaisVendidos,
-        List<VendaResumoDTO> vendas
+        List<TransacaoResponseDTO> transacoes
 ) {}
