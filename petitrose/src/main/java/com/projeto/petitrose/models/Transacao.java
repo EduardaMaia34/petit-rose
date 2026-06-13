@@ -1,8 +1,8 @@
 package com.projeto.petitrose.models;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 import jakarta.persistence.*;
@@ -10,29 +10,28 @@ import lombok.Data;
 
 @Entity
 @Data
-@Table(name = "Comanda")
-public class Comanda implements Serializable {
+@Table(name = "Transacao")
+public class Transacao implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Integer numeroMesa;
+    private TipoTransacao tipo;
 
     @Column(nullable = false)
-    private LocalDateTime dataAbertura = LocalDateTime.now();
+    private String item;
 
-    private LocalDateTime dataFechamento;
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal valor;
 
     @Column(nullable = false)
-    private Boolean aberta = true;
+    private LocalDateTime data = LocalDateTime.now();
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private MetodoPagamento metodoPagamento;
-
-    //uma comanda pode ter vários pedidos
-    @OneToMany(mappedBy = "comanda", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    private List<Pedido> pedidos;
 }

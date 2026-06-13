@@ -10,7 +10,5 @@ public record PedidoResponseDTO(
         LocalDateTime dataCriacao,
         StatusPedido status,
         BigDecimal valorTotal,
-        UUID clienteId,
-        String clienteNome,
         UUID comandaId
 ) {}

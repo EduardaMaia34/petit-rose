@@ -1,5 +1,7 @@
 package com.projeto.petitrose.controller;
 
+import com.projeto.petitrose.dto.CheckoutRequestDTO;
+import com.projeto.petitrose.dto.CheckoutResponseDTO;
 import com.projeto.petitrose.dto.ComandaRequestDTO;
 import com.projeto.petitrose.dto.ComandaResponseDTO;
 import com.projeto.petitrose.models.MetodoPagamento;
@@ -47,5 +49,11 @@ public class ComandaController {
             @RequestParam MetodoPagamento metodoPagamento) {
         comandaService.fecharComanda(id, metodoPagamento);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/checkout")
+    public ResponseEntity<CheckoutResponseDTO> efetuarCheckout(@RequestBody @Valid CheckoutRequestDTO request) {
+        CheckoutResponseDTO response = comandaService.processarPagamento(request);
+        return ResponseEntity.ok(response);
     }
 }
