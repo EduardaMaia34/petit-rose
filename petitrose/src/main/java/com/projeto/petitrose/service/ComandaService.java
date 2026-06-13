@@ -5,9 +5,16 @@ import com.projeto.petitrose.dto.ComandaResponseDTO;
 import com.projeto.petitrose.models.Comanda;
 import com.projeto.petitrose.models.MetodoPagamento;
 import com.projeto.petitrose.models.Pedido;
+import com.projeto.petitrose.models.ItemPedido;
+import com.projeto.petitrose.models.TipoTransacao;
+import com.projeto.petitrose.models.Transacao;
 import com.projeto.petitrose.repositories.ComandaRepository;
+import com.projeto.petitrose.repositories.TransacaoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -20,6 +27,9 @@ public class ComandaService {
 
     @Autowired
     private ComandaRepository comandaRepository;
+
+    @Autowired
+    private TransacaoRepository transacaoRepository;
 
     // abrir nova comanda
     public ComandaResponseDTO abrirNovaComanda(ComandaRequestDTO dto) {
@@ -66,6 +76,37 @@ public class ComandaService {
         comanda.setMetodoPagamento(metodoPagamento);
 
         comandaRepository.save(comanda);
+
+        // Registrar transações financeiras para cada item/produto vendido
+        if (comanda.getPedidos() != null) {
+            Map<String, BigDecimal> subtotalPorProduto = new HashMap<>();
+            for (Pedido pedido : comanda.getPedidos()) {
+                if (pedido.getItens() != null) {
+                    for (ItemPedido item : pedido.getItens()) {
+                        if (item.getProduto() != null) {
+                            String nomeProduto = item.getProduto().getNome();
+                            int quant = item.getQuantidade() != null ? item.getQuantidade() : 0;
+                            BigDecimal preco = item.getPrecoUnitario() != null ? item.getPrecoUnitario() : BigDecimal.ZERO;
+                            BigDecimal subtotal = preco.multiply(BigDecimal.valueOf(quant));
+
+                            subtotalPorProduto.put(nomeProduto, subtotalPorProduto.getOrDefault(nomeProduto, BigDecimal.ZERO).add(subtotal));
+                        }
+                    }
+                }
+            }
+
+            for (Map.Entry<String, BigDecimal> entry : subtotalPorProduto.entrySet()) {
+                if (entry.getValue().compareTo(BigDecimal.ZERO) > 0) {
+                    Transacao transacao = new Transacao();
+                    transacao.setTipo(TipoTransacao.ENTRADA);
+                    transacao.setItem(entry.getKey());
+                    transacao.setValor(entry.getValue());
+                    transacao.setData(comanda.getDataFechamento());
+                    transacao.setMetodoPagamento(metodoPagamento);
+                    transacaoRepository.save(transacao);
+                }
+            }
+        }
     }
 
     // auxiliar
