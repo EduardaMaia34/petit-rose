@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import { api } from './api';
 import { Navbar } from './Navbar';
 import { FinalizarPedidoModal } from './FinalizarPedidoModal';
@@ -6,17 +6,14 @@ import Swal from 'sweetalert2';
 import '../index.css';
 
 export const NovoPedido = () => {
-    const [clientes, setClientes] = useState<any[]>([]);
     const [produtos, setProdutos] = useState<any[]>([]);
     const [comandas, setComandas] = useState<any[]>([]);
     const [itensPedido, setItensPedido] = useState<any[]>([]);
 
-    const [clienteId, setClienteId] = useState('');
     const [comandaId, setComandaId] = useState('');
     const [prodSelecionado, setProdSelecionado] = useState('');
     const [qtd, setQtd] = useState(1);
 
-    // Estado para controlar o número da mesa selecionada para abrir a comanda
     const [mesaSelecionadaParaNovaComanda, setMesaSelecionadaParaNovaComanda] = useState('1');
     const [criandoComanda, setCriandoComanda] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,11 +30,7 @@ export const NovoPedido = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [resCli, resProd] = await Promise.all([
-                    api.get('/usuarios'),
-                    api.get('/produtos')
-                ]);
-                setClientes(resCli.data);
+                const resProd = await api.get('/produtos');
                 setProdutos(resProd.data.filter((p: any) => p.catalogoAtivo || p.catalogo_ativo));
                 await carregarComandasAtivas();
             } catch (error) {
@@ -47,17 +40,14 @@ export const NovoPedido = () => {
         loadData();
     }, []);
 
-    // 🔥 FUNÇÃO ATUALIZADA: Abre uma nova comanda permitindo repetir o número da mesa
     const handleAbrirNovaComandaMesa = async () => {
         try {
             setCriandoComanda(true);
             const numeroMesaInt = parseInt(mesaSelecionadaParaNovaComanda);
-
-            // Conta quantas comandas já estão ativas nessa mesa para dar um apelido visual amigável no log
             const comandasNaMesmaMesa = comandas.filter(c => c.numeroMesa === numeroMesaInt).length;
 
             const response = await api.post('/comandas', {
-                numeroMesa: numeroMesaInt // Envia o Integer esperado por Comanda.java
+                numeroMesa: numeroMesaInt
             });
 
             Swal.fire({
@@ -70,7 +60,7 @@ export const NovoPedido = () => {
             });
 
             await carregarComandasAtivas();
-            setComandaId(response.data.id); // Pré-seleciona a comanda que acabou de ser criada
+            setComandaId(response.data.id);
 
         } catch (error) {
             Swal.fire('Erro', 'Não foi possível abrir uma comanda para esta mesa.', 'error');
@@ -113,15 +103,14 @@ export const NovoPedido = () => {
 
                 <div className="form-produto-container" style={{ maxWidth: '100%', margin: '20px 0' }}>
 
-                    {/* SEÇÃO PRINCIPAL DE COMANDAS: SELECIONAR OU CRIAR */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.5fr 1fr', gap: '20px', alignItems: 'end' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr', gap: '20px', alignItems: 'end' }}>
 
                         {/* 1. DROPDOWN DE COMANDAS ATIVAS */}
                         <div className="form-group" style={{ marginBottom: 0 }}>
                             <label>Selecione a Comanda Ativa *</label>
                             <select value={comandaId} onChange={(e) => setComandaId(e.target.value)} required>
                                 <option value="">Escolha uma comanda ativa...</option>
-                                {comandas.map((com, index) => (
+                                {comandas.map((com) => (
                                     <option key={com.id} value={com.id}>
                                         Mesa {com.numeroMesa} (Ref: #{com.id.substring(0, 4)})
                                     </option>
@@ -152,15 +141,6 @@ export const NovoPedido = () => {
                                     {criandoComanda ? 'Abrindo...' : '+ Abrir Conta'}
                                 </button>
                             </div>
-                        </div>
-
-                        {/* 3. SELEÇÃO DO CLIENTE */}
-                        <div className="form-group" style={{ marginBottom: 0 }}>
-                            <label>Cliente (Opcional)</label>
-                            <select value={clienteId} onChange={(e) => setClienteId(e.target.value)}>
-                                <option value="">Selecione o Cliente...</option>
-                                {clientes.map(c => <option key={c.id} value={c.id}>{c.nome || c.user}</option>)}
-                            </select>
                         </div>
                     </div>
 
@@ -221,7 +201,7 @@ export const NovoPedido = () => {
 
             {isModalOpen && (
                 <FinalizarPedidoModal
-                    dados={{ clienteId, comandaId, itens: itensPedido, total: calcularTotal() }}
+                    dados={{ comandaId, itens: itensPedido, total: calcularTotal() }}
                     onClose={() => setIsModalOpen(false)}
                 />
             )}

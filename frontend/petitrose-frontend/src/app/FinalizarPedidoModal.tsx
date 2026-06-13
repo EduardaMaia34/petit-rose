@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+
 import { api } from './api';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
@@ -11,10 +11,6 @@ export const FinalizarPedidoModal = ({ dados, onClose }: any) => {
             await api.post(`/api/pedidos/comanda/${dados.comandaId}`, {
                 valorTotal: dados.total,
                 status: "PENDENTE",
-                cliente: {
-                    id: dados.clienteId // Envia o objeto de relacionamento do Cliente (Usuario)
-                },
-                // Mapeia a lista de itens conforme a sua entidade ItemPedido correspondente
                 itens: dados.itens.map((i: any) => ({
                     produto: { id: i.id },
                     quantidade: i.quantidade,
@@ -43,6 +39,14 @@ export const FinalizarPedidoModal = ({ dados, onClose }: any) => {
                 <div className="swal2-content" style={{ textAlign: 'left', color: '#600000', fontSize: '16px' }}>
                     <p><strong>Comanda Vinculada:</strong> #{dados.comandaId.substring(0,8)}...</p>
                     <p><strong>Total de Itens:</strong> {dados.itens.length} tipo(s)</p>
+
+                    <h3 style={{ marginTop: '15px', fontSize: '16px', borderTop: '1px solid #fbbfc5', paddingTop: '10px' }}>Resumo:</h3>
+                    <ul style={{ paddingLeft: '20px', margin: '5px 0' }}>
+                        {dados.itens.map((item: any, index: number) => (
+                            <li key={index}>{item.quantidade}x {item.nome}</li>
+                        ))}
+                    </ul>
+
                     <p style={{ fontSize: '20px', marginTop: '15px', borderTop: '1px dashed #fcb1b0', paddingTop: '10px' }}>
                         Valor a ser lançado: <strong style={{ color: '#710100' }}>R$ {dados.total.toFixed(2)}</strong>
                     </p>

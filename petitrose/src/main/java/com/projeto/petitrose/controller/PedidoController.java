@@ -7,17 +7,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List; // 🔥 IMPORTANTE
+import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/pedidos")
+@CrossOrigin(origins = "*") // Garante o acesso do frontend em React sem erros de CORS
 public class PedidoController {
 
     @Autowired
     private PedidoService pedidoService;
 
-    // 🔥 ADICIONE ESTE ENDPOINT QUE ESTAVA FALTANDO PARA A TELA FUNCIONAR
     @GetMapping
     public ResponseEntity<List<Pedido>> listarTodos() {
         List<Pedido> pedidos = pedidoService.listarTodos();

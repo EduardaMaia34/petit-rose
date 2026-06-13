@@ -1,7 +1,7 @@
 /* src/index.css */
 
 @import url('https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@400;700&display=swap');
-
+@import url('bootstrap-icons/font/bootstrap-icons.css');
 :root {
     /* PALETA DE CORES OFICIAL PETIT ROSE */
     --bg-creme: #ffffe3;        /* Fundo dos containers */
