@@ -16,10 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import java.util.List;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 import java.util.List;
 
 @Configuration
@@ -36,45 +33,45 @@ public class SecurityConfigurations {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        // Permite requisições de pre-flight do CORS
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
                         .requestMatchers("/uploads/**").permitAll()
 
-                        // Rotas de Usuários e Produtos
+                        // usuario e produto
                         .requestMatchers(HttpMethod.POST, "/usuarios/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/usuarios/register").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/produtos/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/produtos/novo").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/produtos/**").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/produtos/**").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/produtos/**").permitAll()
+                        .requestMatchers("/produtos/**").permitAll()
+                        .requestMatchers("/produtos").permitAll()
 
-                        // Liberando as rotas de categorias para teste e uso no front
-                        .requestMatchers(HttpMethod.GET, "/categorias/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/categorias/**").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/categorias/**").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/categorias/**").permitAll()
+                        // categoria
+                        .requestMatchers("/categorias/**").permitAll()
+                        .requestMatchers("/categorias").permitAll()
 
+                        // Catálogo, Checkout, Comandas e Pedidos
                         .requestMatchers("/catalogo/**").permitAll()
                         .requestMatchers("/catalogo").permitAll()
-
                         .requestMatchers("/checkout/**").permitAll()
                         .requestMatchers("/checkout").permitAll()
-
                         .requestMatchers("/comandas/**").permitAll()
+                        .requestMatchers("/comandas").permitAll()
+                        
+                        // pedidos
                         .requestMatchers("/pedidos/**").permitAll()
+                        .requestMatchers("/pedidos").permitAll()
 
-                        .requestMatchers(HttpMethod.POST, "/insumos").permitAll()
+                        // estoque e insumos
                         .requestMatchers("/insumos/**").permitAll()
-                        .requestMatchers("/estoque/**").permitAll()
                         .requestMatchers("/insumos").permitAll()
+                        .requestMatchers("/estoque/**").permitAll()
                         .requestMatchers("/estoque").permitAll()
 
+                        //fluxo de caixa
                         .requestMatchers("/transacoes/**").permitAll()
                         .requestMatchers("/transacoes").permitAll()
 
                         .anyRequest().authenticated()
                 )
+                // O filtro customizado roda antes do filtro padrão de usuário/senha
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

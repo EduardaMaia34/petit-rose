@@ -9,9 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/pedidos")
@@ -21,7 +23,7 @@ public class PedidoController {
     private PedidoService pedidoService;
 
     @PostMapping("/comanda/{comandaId}")
-    public ResponseEntity<Pedido> criarPedido(@PathVariable UUID comandaId, @RequestBody PedidoRequestDTO dto) {
+    public ResponseEntity<Pedido> criarPedido(@PathVariable("comandaId") UUID comandaId, @RequestBody PedidoRequestDTO dto) {
         Pedido novoPedido = new Pedido();
         
         if (dto.itens() != null) {
@@ -35,7 +37,7 @@ public class PedidoController {
                 
                 item.setProduto(produto);
                 return item;
-            }).toList();
+            }).collect(Collectors.toCollection(ArrayList::new));
             
             novoPedido.setItens(itensPedidos);
         }
@@ -44,36 +46,27 @@ public class PedidoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(pedidoCriado);
     }
 
-
     @PutMapping("/{pedidoId}")
     public ResponseEntity<Pedido> editarPedido(@PathVariable UUID pedidoId, @RequestBody Pedido pedidoAtualizado) {
-
         Pedido pedidoAlterado = pedidoService.editarPedido(pedidoId, pedidoAtualizado);
-
         return ResponseEntity.ok(pedidoAlterado);
     }
 
-
     @DeleteMapping("/{pedidoId}")
     public ResponseEntity<Void> deletarPedido(@PathVariable UUID pedidoId) {
-
         pedidoService.deletarPedido(pedidoId);
-
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping
-    public ResponseEntity<List<Pedido>> listarTodosPedidos() {
-        // Certifique-se de que o seu pedidoService tem o método listarTodos() implementado
+    public ResponseEntity<List<Pedido>> listarTodos() {
         List<Pedido> pedidos = pedidoService.listarTodos(); 
         return ResponseEntity.ok(pedidos);
     }
 
-
     @GetMapping("/{pedidoId}")
-    public ResponseEntity<Pedido> buscarPedidoPorId(@PathVariable UUID pedidoId) {
+    public ResponseEntity<Pedido> buscarPorId(@PathVariable UUID pedidoId) {
         Pedido pedido = pedidoService.buscarPorId(pedidoId);
         return ResponseEntity.ok(pedido);
     }
-
 }

@@ -28,10 +28,10 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
         if (isOpen) {
             const carregarCategorias = async () => {
                 try {
-                    const response = await api.get('/categorias'); // Ajuste a rota se for diferente no seu backend
+                    const response = await api.get('/categorias');
                     setCategorias(response.data);
                     if (response.data.length > 0) {
-                        setCategoriaId(response.data[0].id); // Seleciona a primeira por padrão
+                        setCategoriaId(response.data[0].id);
                     }
                 } catch (error) {
                     console.error("Erro ao carregar categorias:", error);
@@ -54,6 +54,16 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
     const handleRemoverImagem = () => {
         setImagem(null);
         setPreviewUrl(null);
+    };
+
+    // FUNÇÃO DE LIMPEZA CRÍTICA: Reseta os estados e fecha o modal de forma limpa
+    const handleFecharModal = () => {
+        setNome('');
+        setValor('');
+        setDescricao('');
+        setImagem(null);
+        setPreviewUrl(null);
+        onClose(); // Propaga o fechamento para o componente pai
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -86,14 +96,9 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
 
             Swal.fire('Sucesso!', 'Produto cadastrado com sucesso!', 'success');
 
-            setNome('');
-            setValor('');
-            setDescricao('');
-            setImagem(null);
-            setPreviewUrl(null);
-
+            // Notifica a listagem para recarregar e fecha limpando tudo
             onSucesso();
-            onClose();
+            handleFecharModal();
         } catch (error) {
             Swal.fire('Erro', 'Não foi possível cadastrar o produto.', 'error');
         }
@@ -101,23 +106,22 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
 
     return (
         <div style={modalOverlayStyle}>
-            <div className="form-produto-container" style={modalContainerStyle}>
-                <h2>Novo Produto - Petit Rose</h2>
+            <div className="form-produto-container" style={{ ...modalContainerStyle, maxHeight: '90vh', overflowY: 'auto' }}>
+                <h2>Novo Produto</h2>
 
                 <form onSubmit={handleSubmit}>
-                    <div className="form-group">
+                    <div className="form-group" style={{ marginBottom: '15px' }}>
                         <label>Nome do Produto *</label>
                         <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} required />
                     </div>
 
-                    {/* PREÇO E CATEGORIA LADO A LADO */}
-                    <div style={{ display: 'flex', gap: '15px' }}>
-                        <div className="form-group" style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', gap: '15px', marginBottom: '15px' }}>
+                        <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
                             <label>Preço (R$) *</label>
                             <input type="number" step="0.01" value={valor} onChange={(e) => setValor(e.target.value)} required />
                         </div>
 
-                        <div className="form-group" style={{ flex: 1 }}>
+                        <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
                             <label>Categoria *</label>
                             <select
                                 value={categoriaId}
@@ -132,30 +136,40 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
                         </div>
                     </div>
 
-                    <div className="form-group">
+                    <div className="form-group" style={{ marginBottom: '15px' }}>
                         <label>Imagem do Produto</label>
                         {!previewUrl ? (
-                            <label style={btnUploadRosaStyle}>
+                            <label style={{ ...btnUploadRosaStyle, display: 'block', padding: '12px', textAlign: 'center', borderRadius: 'var(--radius-p)', cursor: 'pointer', fontWeight: 'bold' }}>
                                 📷 Selecionar Imagem
                                 <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                             </label>
                         ) : (
-                            <div style={{ textAlign: 'center', border: '1px dashed var(--rosa-principal)', padding: '10px', borderRadius: 'var(--radius-p)' }}>
+                            <div style={containerFotoPequenaStyle}>
                                 <img src={previewUrl} alt="Preview" style={imgCardStyle} />
-                                <button type="button" onClick={handleRemoverImagem} className="btn-deletar" style={{ padding: '6px 15px', fontSize: '13px' }}>
+                                <button
+                                    type="button"
+                                    onClick={handleRemoverImagem}
+                                    style={{ ...btnAcaoImagemStyle, backgroundColor: 'var(--vinho-texto)', width: '120px' }}
+                                >
                                     Remover Foto
                                 </button>
                             </div>
                         )}
                     </div>
 
-                    <div className="form-group">
+                    <div className="form-group" style={{ marginBottom: '15px' }}>
                         <label>Descrição *</label>
                         <textarea rows={3} value={descricao} onChange={(e) => setDescricao(e.target.value)} required />
                     </div>
 
                     <div style={{ display: 'flex', gap: '15px', marginTop: '25px' }}>
-                        <button type="button" onClick={onClose} className="btn-voltar" style={{ flex: 1, backgroundColor: 'var(--vinho-texto)', color: '#fff', margin: 0, padding: '12px' }}>
+                        {/* Modificado para disparar o handleFecharModal e limpar o estado da foto */}
+                        <button
+                            type="button"
+                            onClick={handleFecharModal}
+                            className="btn-voltar"
+                            style={{ flex: 1, backgroundColor: 'var(--vinho-texto)', color: '#fff', margin: 0, padding: '12px' }}
+                        >
                             Cancelar
                         </button>
                         <button type="submit" className="btn-padrao" style={{ flex: 1, margin: 0, padding: '12px' }}>
@@ -168,25 +182,52 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
     );
 };
 
+/* ESTILOS INTERNOS */
+
 const modalOverlayStyle: React.CSSProperties = {
     position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
     backgroundColor: 'rgba(0, 0, 0, 0.4)', display: 'flex', justifyContent: 'center',
-    alignItems: 'center', zIndex: 2000
+    alignItems: 'center', zIndex: 2000, padding: '20px', boxSizing: 'border-box'
 };
 
 const modalContainerStyle: React.CSSProperties = {
-    margin: 0, width: '100%', boxShadow: '0 8px 30px rgba(0,0,0,0.2)'
+    margin: 0, width: '100%', maxWidth: '550px', boxShadow: '0 8px 30px rgba(0,0,0,0.2)'
 };
 
 const btnUploadRosaStyle: React.CSSProperties = {
-    display: 'block', backgroundColor: 'var(--rosa-principal)', color: 'var(--vinho-texto)', padding: '12px',
-    borderRadius: 'var(--radius-p)', textAlign: 'center', cursor: 'pointer', fontWeight: 'bold'
+    backgroundColor: 'var(--rosa-principal)', color: 'var(--vinho-texto)'
+};
+
+const btnAcaoImagemStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    color: '#fff',
+    padding: '6px 12px',
+    borderRadius: 'var(--radius-p)',
+    textAlign: 'center',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    fontSize: '13px',
+    border: 'none',
+    height: '34px',
+    boxSizing: 'border-box'
+};
+
+const containerFotoPequenaStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '15px',
+    border: '1px solid var(--rosa-escuro)',
+    padding: '10px',
+    borderRadius: 'var(--radius-p)',
+    backgroundColor: '#fff'
 };
 
 const imgCardStyle: React.CSSProperties = {
-    width: '100%',
-    height: '220px',
+    width: '100px',
+    height: '80px',
     objectFit: 'cover',
-    borderRadius: '15px',
-    marginBottom: '10px'
+    borderRadius: '6px'
 };

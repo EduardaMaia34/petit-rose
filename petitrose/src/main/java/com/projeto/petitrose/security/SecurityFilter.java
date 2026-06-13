@@ -31,20 +31,26 @@ public class SecurityFilter extends OncePerRequestFilter {
         var token = this.recoverToken(request);
 
         if (token != null) {
-            
-            String login = tokenService.validarToken(token);
-            
-            if (login != null && !login.isEmpty()) {
-                Usuario usuario = usuarioRepository.findByUser(login);
+            try {
                 
-                if (usuario != null) {
-                    var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                String login = tokenService.validarToken(token);
+                
+                if (login != null && !login.isEmpty()) {
+                    Usuario usuario = usuarioRepository.findByUser(login);
+                    
+                    if (usuario != null) {
+                        var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
                 }
+            } catch (Exception e) {
+                
+                SecurityContextHolder.clearContext();
+                System.out.println("Erro ao validar token JWT: " + e.getMessage());
             }
         }
 
-        // Garante que a requisição siga em frente e destrave o Timeout do Insomnia!
+        
         filterChain.doFilter(request, response);
     }
 
