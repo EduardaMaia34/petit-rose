@@ -3,12 +3,17 @@ package com.projeto.petitrose.service;
 import com.projeto.petitrose.models.Comanda;
 import com.projeto.petitrose.models.ItemPedido;
 import com.projeto.petitrose.models.Pedido;
+import com.projeto.petitrose.models.Produto;
+import com.projeto.petitrose.models.StatusPedido;
 import com.projeto.petitrose.repositories.ComandaRepository;
 import com.projeto.petitrose.repositories.PedidoRepository;
+import com.projeto.petitrose.repositories.ProdutoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,31 +26,55 @@ public class PedidoService {
     @Autowired
     private ComandaRepository comandaRepository;
 
-    @Transactional(readOnly = true)
-    public List<Pedido> listarTodos() {
-        return pedidoRepository.findAll();
-    }
+    @Autowired
+    private ProdutoRepository produtoRepository;
 
     @Transactional
     public Pedido criarPedidoNaComanda(UUID comandaId, Pedido novoPedido) {
-        // 1. Busca a comanda ativa associada
+        
         Comanda comanda = comandaRepository.findById(comandaId)
-                .orElseThrow(() -> new RuntimeException("Comanda não encontrada"));
-
-        // Associa o pedido à comanda
+                .orElseThrow(() -> new RuntimeException("Comanda não encontrada com o ID fornecido: " + comandaId));
+        
         novoPedido.setComanda(comanda);
+        novoPedido.setDataCriacao(LocalDateTime.now());
+        novoPedido.setStatus(StatusPedido.PENDENTE);
 
-        // 2. Amarra o relacionamento bidirecional dos itens
-        if (novoPedido.getItens() != null) {
-            for (ItemPedido item : novoPedido.getItens()) {
-                // 🔥 CORREÇÃO CRÍTICA: REMOVIDA a linha item.setId(UUID.randomUUID());
-                // Deixe o campo 'id' nulo para o Hibernate entender que é uma nova inserção!
-                item.setPedido(novoPedido);
+        novoPedido.setValorTotal(BigDecimal.ZERO); 
+
+        BigDecimal totalPedido = BigDecimal.ZERO;
+
+        List<ItemPedido> itensParaProcessar = novoPedido.getItens();
+        novoPedido.setItens(null);
+
+        Pedido pedidoSalvo = pedidoRepository.save(novoPedido);
+
+        if (itensParaProcessar != null && !itensParaProcessar.isEmpty()) {
+            for (ItemPedido item : itensParaProcessar) {
+
+                item.setId(null); 
+
+                Produto produtoReal = produtoRepository.findById(item.getProduto().getId())
+                        .orElseThrow(() -> new RuntimeException("Produto não encontrado no catálogo"));
+
+                item.setProduto(produtoReal);
+                item.setPrecoUnitario(BigDecimal.valueOf(produtoReal.getValor())); 
+                item.setPedido(pedidoSalvo); 
+
+                BigDecimal quantidadeBigDecimal = new BigDecimal(item.getQuantidade());
+                BigDecimal subtotalItem = item.getPrecoUnitario().multiply(quantidadeBigDecimal);
+
+                totalPedido = totalPedido.add(subtotalItem);
             }
+            pedidoSalvo.setItens(itensParaProcessar);
         }
 
-        // 3. Salva o pedido limpo no banco (o JPA gerará o UUID dos itens automaticamente)
-        return pedidoRepository.save(novoPedido);
+        pedidoSalvo.setValorTotal(totalPedido);
+
+        BigDecimal valorAtualComanda = comanda.getValorTotal() != null ? comanda.getValorTotal() : BigDecimal.ZERO;
+        comanda.setValorTotal(valorAtualComanda.add(totalPedido));
+        comandaRepository.save(comanda);
+
+        return pedidoRepository.save(pedidoSalvo);
     }
 
     @Transactional
@@ -53,7 +82,6 @@ public class PedidoService {
         Pedido pedidoExistente = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
 
-        // Atualiza os dados básicos do cabeçalho do pedido
         pedidoExistente.setStatus(pedidoAtualizado.getStatus());
         pedidoExistente.setValorTotal(pedidoAtualizado.getValorTotal());
 
@@ -61,12 +89,10 @@ public class PedidoService {
             pedidoExistente.setComanda(pedidoAtualizado.getComanda());
         }
 
-        // Atualiza a lista de itens de forma segura
         if (pedidoAtualizado.getItens() != null) {
             pedidoExistente.getItens().clear();
 
             for (ItemPedido item : pedidoAtualizado.getItens()) {
-                // 🔥 CORREÇÃO CRÍTICA: Não force UUID.randomUUID() aqui também
                 item.setPedido(pedidoExistente);
             }
 
@@ -82,5 +108,16 @@ public class PedidoService {
             throw new RuntimeException("Pedido não encontrado para exclusão");
         }
         pedidoRepository.deleteById(pedidoId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Pedido> listarTodos() {
+        return pedidoRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public Pedido buscarPorId(UUID pedidoId) {
+        return pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new RuntimeException("Pedido não encontrado com o ID: " + pedidoId));
     }
 }
