@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/transacoes")
+@RequestMapping("/transacoes")
 public class TransacaoController {
 
     @Autowired

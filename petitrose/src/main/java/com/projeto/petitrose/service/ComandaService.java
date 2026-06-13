@@ -76,20 +76,10 @@ public class ComandaService {
         comanda.setDataFechamento(LocalDateTime.now());
         comanda.setMetodoPagamento(metodoPagamento);
 
-        // --- MECANISMO DE DESVINCULAÇÃO ---
+        // 1. REGISTRAR TRANSAÇÕES ANTES DE LIMPAR O RELACIONAMENTO
         if (comanda.getPedidos() != null && !comanda.getPedidos().isEmpty()) {
-            // Remove o vínculo apontando a comanda de cada pedido para NULL
-            comanda.getPedidos().forEach(pedido -> pedido.setComanda(null));
-            // Limpa a lista da comanda para refletir no banco de dados que ela esvaziou
-            comanda.getPedidos().clear();
-        }
-        // -----------------------------------
-
-        comandaRepository.save(comanda);
-
-        // Registrar transações financeiras para cada item/produto vendido
-        if (comanda.getPedidos() != null) {
             Map<String, BigDecimal> subtotalPorProduto = new HashMap<>();
+            
             for (Pedido pedido : comanda.getPedidos()) {
                 if (pedido.getItens() != null) {
                     for (ItemPedido item : pedido.getItens()) {
@@ -117,6 +107,14 @@ public class ComandaService {
                 }
             }
         }
+
+        
+        if (comanda.getPedidos() != null && !comanda.getPedidos().isEmpty()) {
+            comanda.getPedidos().forEach(pedido -> pedido.setComanda(null));
+            comanda.getPedidos().clear();
+        }
+
+        comandaRepository.save(comanda);
     }
 
     // filtrar comandas fechadas por intervalo de datas
@@ -148,7 +146,11 @@ public class ComandaService {
             throw new IllegalArgumentException("Nenhuma comanda encontrada para os IDs fornecidos.");
         }
 
-        
+        if (request.metodoPagamento() == null) {
+            throw new IllegalArgumentException("O método de pagamento é obrigatório para processar o checkout");
+        }
+
+        // 1. Calcula o total geral antes de alterar qualquer estado
         BigDecimal totalGeral = comandas.stream()
                 .map(comanda -> {
                     if (comanda.getPedidos() == null) return BigDecimal.ZERO;
@@ -158,7 +160,7 @@ public class ComandaService {
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        
+        // 2. Consolida os itens para o DTO de resposta
         List<ItemConsolidadoDTO> itensConsolidados = comandas.stream()
                 .filter(comanda -> comanda.getPedidos() != null)
                 .flatMap(comanda -> comanda.getPedidos().stream())
@@ -184,16 +186,52 @@ public class ComandaService {
                 .stream()
                 .collect(Collectors.toList());
 
+        
+        Map<String, BigDecimal> subtotalPorProduto = new HashMap<>();
+        
+        for (Comanda comanda : comandas) {
+            if (comanda.getPedidos() != null) {
+                for (Pedido pedido : comanda.getPedidos()) {
+                    if (pedido.getItens() != null) {
+                        for (ItemPedido item : pedido.getItens()) {
+                            if (item.getProduto() != null) {
+                                String nomeProduto = item.getProduto().getNome();
+                                int quant = item.getQuantidade() != null ? item.getQuantidade() : 0;
+                                BigDecimal preco = item.getPrecoUnitario() != null ? item.getPrecoUnitario() : BigDecimal.ZERO;
+                                BigDecimal subtotal = preco.multiply(BigDecimal.valueOf(quant));
+
+                                subtotalPorProduto.put(nomeProduto, subtotalPorProduto.getOrDefault(nomeProduto, BigDecimal.ZERO).add(subtotal));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        LocalDateTime agora = LocalDateTime.now();
+
+        for (Map.Entry<String, BigDecimal> entry : subtotalPorProduto.entrySet()) {
+            if (entry.getValue().compareTo(BigDecimal.ZERO) > 0) {
+                Transacao transacao = new Transacao();
+                transacao.setTipo(TipoTransacao.ENTRADA);
+                transacao.setItem(entry.getKey());
+                transacao.setValor(entry.getValue());
+                transacao.setData(agora);
+                transacao.setMetodoPagamento(request.metodoPagamento());
+                transacaoRepository.save(transacao);
+            }
+        }
+
+        
         comandas.forEach(comanda -> {
             comanda.setAberta(false);
-            comanda.setDataFechamento(LocalDateTime.now());
+            comanda.setDataFechamento(agora);
+            comanda.setMetodoPagamento(request.metodoPagamento());
             
-            // desvincula pedidos de comanda quando ela fecha
             if (comanda.getPedidos() != null && !comanda.getPedidos().isEmpty()) {
                 comanda.getPedidos().forEach(pedido -> pedido.setComanda(null));
                 comanda.getPedidos().clear();
             }
-            
         });
         
         comandaRepository.saveAll(comandas);

@@ -70,6 +70,9 @@ public class SecurityConfigurations {
                         .requestMatchers("/insumos").permitAll()
                         .requestMatchers("/estoque").permitAll()
 
+                        .requestMatchers("/transacoes/**").permitAll()
+                        .requestMatchers("/transacoes").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
