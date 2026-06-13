@@ -30,9 +30,10 @@ export const EditarPedido: React.FC<EditarPedidoProps> = ({ idPedidoModal, onClo
         const buscarDados = async () => {
             try {
                 setCarregando(true);
+                // 🔥 URL corrigida para bater com o novo @RequestMapping("/pedidos") do backend
                 const [resProd, resPedido] = await Promise.all([
                     api.get('/produtos'),
-                    api.get(`/api/pedidos`)
+                    api.get(`/pedidos`)
                 ]);
 
                 setProdutosDisponiveis(resProd.data);
@@ -111,7 +112,8 @@ export const EditarPedido: React.FC<EditarPedidoProps> = ({ idPedidoModal, onClo
         }
 
         try {
-            await api.put(`/api/pedidos/${id}`, {
+            // 🔥 URL corrigida para o prefixo /pedidos
+            await api.put(`/pedidos/${id}`, {
                 id: id,
                 status: pedidoOriginal.status,
                 valorTotal: calcularValorTotal(),
@@ -144,7 +146,6 @@ export const EditarPedido: React.FC<EditarPedidoProps> = ({ idPedidoModal, onClo
                 </p>
             </div>
 
-            {/* Inserção de Itens */}
             <div style={{ backgroundColor: '#fffaf0', padding: '15px', borderRadius: '8px', border: '1px solid #fbbfc5', marginBottom: '20px' }}>
                 <h4 style={{ margin: '0 0 10px 0' }}>Inserir novos doces</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '10px', alignItems: 'end' }}>
@@ -167,7 +168,6 @@ export const EditarPedido: React.FC<EditarPedidoProps> = ({ idPedidoModal, onClo
                 </div>
             </div>
 
-            {/* Tabela Interativa */}
             <div style={{ overflowX: 'auto', maxHeight: '200px', marginBottom: '20px', border: '1px solid #fbbfc5', borderRadius: '4px' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
                     <thead style={{ backgroundColor: '#fcb1b0', color: '#710100' }}>
@@ -201,36 +201,11 @@ export const EditarPedido: React.FC<EditarPedidoProps> = ({ idPedidoModal, onClo
                 <h3 style={{ margin: 0 }}>Total Corrigido: <span style={{ color: '#710100' }}>R$ {calcularValorTotal().toFixed(2)}</span></h3>
             </div>
 
-            {/* 🔥 RODAPÉ DO MODAL ATUALIZADO: Cancelar em Vinho e Salvar em Rosa */}
             <div style={{ display: 'flex', gap: '15px', justifyContent: 'flex-end', borderTop: '1px dashed #fbbfc5', paddingTop: '15px' }}>
-                <button
-                    type="button"
-                    onClick={lidarComFechamento}
-                    style={{
-                        backgroundColor: '#600000',
-                        color: '#fff8e6',
-                        border: 'none',
-                        borderRadius: '4px',
-                        padding: '10px 20px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer'
-                    }}
-                >
+                <button type="button" onClick={lidarComFechamento} style={{ backgroundColor: '#600000', color: '#fff8e6', border: 'none', borderRadius: '4px', padding: '10px 20px', fontWeight: 'bold', cursor: 'pointer' }}>
                     Cancelar
                 </button>
-                <button
-                    type="button"
-                    onClick={salvarAlteracoes}
-                    style={{
-                        backgroundColor: '#fbbfc5',
-                        color: '#600000',
-                        border: 'none',
-                        borderRadius: '4px',
-                        padding: '10px 20px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer'
-                    }}
-                >
+                <button type="button" onClick={salvarAlteracoes} style={{ backgroundColor: '#fbbfc5', color: '#600000', border: 'none', borderRadius: '4px', padding: '10px 20px', fontWeight: 'bold', cursor: 'pointer' }}>
                     Confirmar e Salvar
                 </button>
             </div>
