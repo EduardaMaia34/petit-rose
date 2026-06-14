@@ -1,5 +1,7 @@
 package com.projeto.petitrose.service;
 
+import com.projeto.petitrose.dto.ItemEstoqueResponseDTO;
+import com.projeto.petitrose.dto.InsumoRequestDTO;
 import com.projeto.petitrose.models.Estoque;
 import com.projeto.petitrose.models.Insumo;
 import com.projeto.petitrose.models.ItemEstoque;
@@ -15,6 +17,7 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class InsumoService {
+    
     @Autowired
     private EstoqueRepository estoqueRepository;
 
@@ -23,10 +26,13 @@ public class InsumoService {
 
     @Autowired
     private InsumoRepository insumoRepository;
-
+    
     @Transactional
-    public Insumo criar(Insumo insumo) {
-        insumo.setId(null);
+    public ItemEstoqueResponseDTO criar(InsumoRequestDTO dto) {
+        
+        Insumo insumo = new Insumo();
+        insumo.setNome(dto.nome());
+        insumo.setValorUnitario(dto.valorUnitario());
         Insumo insumoSalvo = insumoRepository.save(insumo);
 
         
@@ -36,16 +42,40 @@ public class InsumoService {
                     return estoqueRepository.save(novoEstoque);
                 });
 
-        // quando insumo eh criado, sera adicionado ao estoque com quantidade 0
+        
         ItemEstoque novoItem = new ItemEstoque();
         novoItem.setEstoque(estoqueCentral);
         novoItem.setInsumo(insumoSalvo);
-        novoItem.setQuantidadeAtual(0);
-        novoItem.setCapacityMaxima(100);
+        
+        
+        novoItem.setQuantidadeAtual(dto.quantidadeAtual() != null ? dto.quantidadeAtual() : 0);   
+        novoItem.setCapacityMaxima(dto.capacidadeMaxima() != null ? dto.capacidadeMaxima() : 100); 
+        ItemEstoque itemSalvo = itemEstoqueRepository.save(novoItem);
 
-        itemEstoqueRepository.save(novoItem);
+        
+        float porcentagem = 0;
+        if (itemSalvo.getCapacityMaxima() > 0) {
+            porcentagem = ((float) itemSalvo.getQuantidadeAtual() / itemSalvo.getCapacityMaxima()) * 100;
+        }
 
-        return insumoSalvo;
+        
+        String status = "OK";
+        if (porcentagem <= 20) {
+            status = "CRÍTICO";
+        } else if (porcentagem >= 100) {
+            status = "CHEIO";
+        }
+
+        
+        return new ItemEstoqueResponseDTO(
+            itemSalvo.getId(),         
+            insumoSalvo.getId(),      
+            insumoSalvo.getNome(),
+            itemSalvo.getQuantidadeAtual(),
+            itemSalvo.getCapacityMaxima(),
+            porcentagem,
+            status
+        );
     }
 
     // listar todos
@@ -67,7 +97,6 @@ public class InsumoService {
     public Insumo editar(UUID id, Insumo insumoAtualizado) {
         Insumo insumoExistente = insumoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Insumo não encontrado com o ID: " + id));
-
         
         insumoExistente.setNome(insumoAtualizado.getNome());
         insumoExistente.setValorUnitario(insumoAtualizado.getValorUnitario());
@@ -78,14 +107,10 @@ public class InsumoService {
     // deletar Insumo
     @Transactional
     public void deletar(UUID id) {
-        
         Insumo insumoExistente = insumoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Insumo não encontrado com o ID: " + id));
-
         
         itemEstoqueRepository.deleteByInsumo(insumoExistente);
-
-
         insumoRepository.delete(insumoExistente);
     }
 }

@@ -6,8 +6,8 @@ public record ItemEstoqueResponseDTO(
     UUID id,
     UUID insumoId,
     String nomeInsumo,
-    int quantidadeAtual,
-    int capacidadeMaxima,
+    Integer quantidadeAtual,  
+    Integer capacidadeMaxima,  
     float porcentagem,
     String status
 ) {}
