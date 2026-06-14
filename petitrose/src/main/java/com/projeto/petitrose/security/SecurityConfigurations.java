@@ -29,21 +29,26 @@ public class SecurityConfigurations {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
+                // Ativa a configuração do CORS definida abaixo e desabilita o CSRF
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
+                
+                // Define a política de sessão como STATELESS (padrão para JWT)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                
+                // Configuração das regras de acesso dos Endpoints
                 .authorizeHttpRequests(authorize -> authorize
-                        // Permite requisições de pre-flight do CORS
+                        // Permite requisições de pre-flight do CORS (OPTIONS)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
 
-                        // usuario e produto
+                        // Usuário e Autenticação
                         .requestMatchers(HttpMethod.POST, "/usuarios/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/usuarios/register").permitAll()
                         .requestMatchers("/produtos/**").permitAll()
                         .requestMatchers("/produtos").permitAll()
 
-                        // categoria
+                        // Categorias
                         .requestMatchers("/categorias/**").permitAll()
                         .requestMatchers("/categorias").permitAll()
 
@@ -55,23 +60,24 @@ public class SecurityConfigurations {
                         .requestMatchers("/comandas/**").permitAll()
                         .requestMatchers("/comandas").permitAll()
 
-                        // pedidos
+                        // Pedidos
                         .requestMatchers("/pedidos/**").permitAll()
                         .requestMatchers("/pedidos").permitAll()
 
-                        // estoque e insumos
+                        // Estoque e Insumos
                         .requestMatchers("/insumos/**").permitAll()
                         .requestMatchers("/insumos").permitAll()
                         .requestMatchers("/estoque/**").permitAll()
                         .requestMatchers("/estoque").permitAll()
 
-                        //fluxo de caixa
+                        // Fluxo de Caixa / Transações
                         .requestMatchers("/transacoes/**").permitAll()
                         .requestMatchers("/transacoes").permitAll()
 
+                        // Qualquer outra rota exige autenticação por Token
                         .anyRequest().authenticated()
                 )
-                // O filtro customizado roda antes do filtro padrão de usuário/senha
+                // Insere o filtro customizado JWT antes do filtro de autenticação padrão do Spring
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
@@ -89,9 +95,15 @@ public class SecurityConfigurations {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+        
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
+        
+        configuration.setAllowedHeaders(List.of("*"));
+        
+        configuration.setExposedHeaders(List.of("Authorization"));
+        
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

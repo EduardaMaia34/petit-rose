@@ -76,10 +76,16 @@ public class InsumoService {
     }
 
     // deletar Insumo
+    @Transactional
     public void deletar(UUID id) {
-        if (!insumoRepository.existsById(id)) {
-            throw new RuntimeException("Insumo não encontrado com o ID: " + id);
-        }
-        insumoRepository.deleteById(id);
+        
+        Insumo insumoExistente = insumoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Insumo não encontrado com o ID: " + id));
+
+        
+        itemEstoqueRepository.deleteByInsumo(insumoExistente);
+
+
+        insumoRepository.delete(insumoExistente);
     }
 }

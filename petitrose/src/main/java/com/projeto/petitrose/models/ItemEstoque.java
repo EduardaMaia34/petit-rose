@@ -21,7 +21,7 @@ public class ItemEstoque {
     private Estoque estoque;
 
     
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.REMOVE)
     @JoinColumn(name = "insumo_id", nullable = false)
     private Insumo insumo;
 
