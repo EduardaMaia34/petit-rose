@@ -1,6 +1,8 @@
 package com.projeto.petitrose.controller;
 
 import com.projeto.petitrose.models.Insumo;
+import com.projeto.petitrose.dto.InsumoRequestDTO;        
+import com.projeto.petitrose.dto.ItemEstoqueResponseDTO; 
 import com.projeto.petitrose.service.InsumoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,9 +21,9 @@ public class InsumoController {
 
 
     @PostMapping
-    public ResponseEntity<Insumo> criarInsumo(@RequestBody Insumo insumo) {
-        Insumo novoInsumo = insumoService.criar(insumo);
-        return ResponseEntity.status(HttpStatus.CREATED).body(novoInsumo);
+    public ResponseEntity<ItemEstoqueResponseDTO> criarInsumo(@RequestBody InsumoRequestDTO dto) {
+        ItemEstoqueResponseDTO novoItemEstoque = insumoService.criar(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(novoItemEstoque);
     }
 
     @GetMapping
@@ -53,7 +55,7 @@ public class InsumoController {
     public ResponseEntity<Void> deletarInsumo(@PathVariable UUID id) {
         try {
             insumoService.deletar(id);
-            return ResponseEntity.noContent().build(); // Retorna Status 204 (Sucesso sem corpo de resposta)
+            return ResponseEntity.noContent().build(); 
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }

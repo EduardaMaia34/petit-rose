@@ -3,7 +3,7 @@ import { Navbar } from './Navbar';
 import Swal from 'sweetalert2';
 import { api } from "./api";
 import '../index.css';
-import { MdWarning, MdInventory, MdAdd, MdDelete } from 'react-icons/md';
+import { MdWarning, MdInventory, MdAdd, MdDelete, MdEdit } from 'react-icons/md';
 
 // Categorias e Unidades padrões mantidas para o formulário de cadastro local
 const categoriasInsumo = [
@@ -40,6 +40,8 @@ export const ControleEstoque = () => {
     const [capacidadeMax, setCapacidadeMax] = useState('');
     const [unidade, setUnidade] = useState('kg');
     const [categoria, setCategoria] = useState('');
+    const [modoEdicao, setModoEdicao] = useState(false);
+    const [itemEditando, setItemEditando] = useState<string | null>(null);
 
     // 1. CARREGAMENTO DOS INSUMOS REAIS DO BANCO DE DADOS
     const carregarEstoqueCompleto = async () => {
@@ -130,6 +132,17 @@ export const ControleEstoque = () => {
         return { corTexto: '#28a745', corFundo: '#e6f7ed', corBarra: '#28a745' };
     };
 
+    const handleEditarInsumo = (insumo: ItemEstoqueDTO) => {
+        setModoEdicao(true);
+        setItemEditando(insumo.id);
+
+        setNome(insumo.nomeInsumo);
+        setQuantidade(insumo.quantidadeAtual.toString());
+        setCapacidadeMax(insumo.capacidadeMaxima.toString());
+
+        setIsModalInsumoAberto(true);
+    };
+
     // 3. CADASTRO DE INSUMO SINCRONIZANDO O FLUXO DUPLO DO BACKEND
     const handleSalvarInsumo = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -147,51 +160,43 @@ export const ControleEstoque = () => {
         try {
             setLoading(true);
 
-            // Passo 1: Cria o insumo base em /insumos (o InsumoService vai rodar a trigger e gerar o ItemEstoque zerado)
-            const resInsumo = await api.post('/insumos', {
+            await api.post('/insumos', {
                 nome: nome,
-                valorUnitario: 0.0 // Alinhado com a propriedade float da sua entidade Insumo.java
+                valorUnitario: 0.0,
+                quantidadeAtual: parseInt(quantidade),
+                capacidadeMaxima: parseInt(capacidadeMax)
             });
 
-            const novoInsumoId = resInsumo.data.id;
-
-            // Passo 2: Recarrega a lista de estoque para pescar a linha gerada automaticamente pela Mari
-            const resEstoqueAtualizado = await api.get('/estoque');
-            const listaItensEstoque: ItemEstoqueDTO[] = resEstoqueAtualizado.data;
-
-            // ✨ CORRIGIDO: Agora buscando cruzando a chave com 'insumoId' idêntico ao Record do Java
-            const linhaEstoqueGerada = listaItensEstoque.find(item => item.insumoId === novoInsumoId);
-
-            // Passo 3: Tendo o ID correto da linha do estoque, faz o PUT atualizando as quantidades reais
-            if (linhaEstoqueGerada) {
-                await api.put(`/estoque/item/${linhaEstoqueGerada.id}`, {
-                    quantidadeAtual: parseInt(quantidade),
-                    capacidadeMaxima: parseInt(capacidadeMax) // ✨ CORRIGIDO: Alinhado com a propriedade do back
-                });
-
-                Swal.fire({
-                    title: 'Insumo Cadastrado!',
-                    text: `O item "${nome}" foi inserido com sucesso com saldo inicial.`,
-                    icon: 'success',
-                    confirmButtonColor: '#710100'
-                });
-            } else {
-                throw new Error("Não foi possível localizar o vínculo de estoque para este insumo.");
-            }
+            Swal.fire({
+                title: 'Insumo Cadastrado!',
+                text: `O item "${nome}" foi inserido com sucesso.`,
+                icon: 'success',
+                confirmButtonColor: '#710100'
+            });
 
             setNome('');
             setQuantidade('');
             setCapacidadeMax('');
             setCategoria('');
             setIsModalInsumoAberto(false);
+
             carregarEstoqueCompleto();
+
         } catch (error) {
-            console.error("Erro ao cadastrar novo insumo completo:", error);
-            Swal.fire('Erro', 'Não foi possível salvar o insumo e suas quantidades.', 'error');
+            console.error(error);
+
+            Swal.fire({
+                title: 'Erro',
+                text: 'Não foi possível salvar o insumo.',
+                icon: 'error',
+                confirmButtonColor: '#710100'
+            });
         } finally {
             setLoading(false);
         }
     };
+
+
 
     return (
         <div className="dashboard-page">
@@ -313,6 +318,25 @@ export const ControleEstoque = () => {
                                                 </button>
 
                                                 <button
+                                                    onClick={() => handleEditarInsumo(insumo)}
+                                                    style={{
+                                                        width: '28px',
+                                                        height: '28px',
+                                                        borderRadius: '6px',
+                                                        border: '1px solid #0d6efd',
+                                                        backgroundColor: '#eef5ff',
+                                                        color: '#0d6efd',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    }}
+                                                    title="Editar Insumo"
+                                                >
+                                                    <MdEdit />
+                                                </button>
+
+                                                <button
                                                     onClick={() => handleExcluirInsumo(insumo.insumoId)}
                                                     style={{
                                                         width: '28px', height: '28px', borderRadius: '6px',
@@ -346,7 +370,6 @@ export const ControleEstoque = () => {
                                         <h2 style={{ color: '#710100', margin: 0, fontFamily: 'Abhaya Libre', fontSize: '24px', fontWeight: 'bold' }}>Cadastrar Novo Insumo</h2>
                                     </div>
                                     <button type="button" onClick={() => setIsModalInsumoAberto(false)} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: '#6c757d' }}>&times;</button>
-                                    end
                                 </div>
 
                                 <form onSubmit={handleSalvarInsumo} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

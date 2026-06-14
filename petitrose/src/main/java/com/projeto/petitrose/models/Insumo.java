@@ -1,5 +1,6 @@
 package com.projeto.petitrose.models;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -26,6 +27,5 @@ public class Insumo {
     private String nome;
 
     @Column(name = "valor_unitario", nullable = false)
-    private float valorUnitario;
-
+    private BigDecimal valorUnitario;
 }

@@ -29,5 +29,5 @@ public class ItemEstoque {
     private int quantidadeAtual;
 
     @Column(name = "capacidade_maxima", nullable = false)
-    private int capacityMaxima = 100;
+    private int capacityMaxima;
 }
