@@ -13,9 +13,9 @@ import {
 } from 'react-icons/md';
 
 interface ItemVendidoDTO {
-    produtoNome: string;
+    nomeProduto: string;
     quantidade: number;
-    faturamento: number;
+    subtotal: number;
 }
 
 interface TransacaoResponseDTO {
@@ -34,11 +34,13 @@ interface RelatorioFluxoCaixaDTO {
     totalSaidas: number;
     saldo: number;
     faturamentoPorMetodoPagamento: Record<string, number>;
+    despesaPorMetodoPagamento: Record<string, number>;
     itensMaisVendidos: ItemVendidoDTO[];
-    transacoes: TransacaoResponseDTO[];
+    transacoes?: TransacaoResponseDTO[];
 }
 
 const metodosPagamento = ['PIX', 'DINHEIRO', 'CARTAO_CREDITO', 'CARTAO_DEBITO'];
+
 
 export const MenuAdmin = () => {
     const navigate = useNavigate();
@@ -55,7 +57,20 @@ export const MenuAdmin = () => {
     const carregarDashboardGeral = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/api/relatorios/fluxo-caixa');
+
+            const agora = new Date();
+
+            const dataInicio = new Date();
+            dataInicio.setDate(1);
+            dataInicio.setHours(0, 0, 0, 0);
+
+            const response = await api.get('/api/relatorios/fluxo-caixa', {
+                params: {
+                    dataInicio: dataInicio.toISOString(),
+                    dataFim: agora.toISOString()
+                }
+            });
+
             setDados(response.data);
         } catch (error) {
             console.error("Erro ao carregar dados do painel do administrador:", error);
@@ -248,7 +263,7 @@ export const MenuAdmin = () => {
                                         return (
                                             <div key={idx}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '4px', color: '#3c1010', fontWeight: '500' }}>
-                                                    <span>{p.produtoNome}</span> <strong>{p.quantidade} un</strong>
+                                                    <span>{p.nomeProduto}</span> <strong>{p.quantidade} un</strong>
                                                 </div>
                                                 <div style={{ width: '100%', height: '6px', backgroundColor: '#e0e0e0', borderRadius: '3px', overflow: 'hidden' }}>
                                                     <div style={{ width: barraPorcentagem, height: '100%', backgroundColor: '#710100', opacity: 1 - (idx * 0.2) }}></div>

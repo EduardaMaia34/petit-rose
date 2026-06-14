@@ -4,12 +4,27 @@ import Swal from 'sweetalert2';
 import { api } from "./api";
 import '../index.css';
 import { MdPictureAsPdf, MdAdd, MdTrendingUp, MdCheckCircle, MdRemoveCircleOutline } from 'react-icons/md';
+import {
+    PieChart,
+    Pie,
+    Cell,
+    ResponsiveContainer,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    LabelList
+} from 'recharts';
+
+
 
 // Interfaces baseadas estritamente nos Records do Java do Petit Rose
 interface ItemVendidoDTO {
-    produtoNome: string;
+    nomeProduto: string;
     quantidade: number;
-    faturamento: number;
+    subtotal: number;
 }
 
 interface RelatorioFluxoCaixaDTO {
@@ -92,7 +107,26 @@ export const Relatorios = () => {
     const saldoConsolidado = dadosRelatorio?.saldo ?? 0;
     const maisVendidos = dadosRelatorio?.itensMaisVendidos || [];
     const faturamentoMetodos = dadosRelatorio?.faturamentoPorMetodoPagamento || {};
+    const dadosPizza = Object.entries(faturamentoMetodos).map(
+        ([metodo, valor]) => ({
+            name: metodo.replace('_', ' '),
+            value: valor || 0
+        })
+    );
 
+    const dadosProdutos = maisVendidos
+        .slice(0, 5)
+        .map(prod => ({
+            nome: prod.nomeProduto,
+            quantidade: prod.quantidade
+        }));
+
+    const COLORS = [
+        '#710100',
+        '#f48a92',
+        '#f7b3b8',
+        '#fde2e2'
+    ];
     // Mapeia os dados protegendo contra valores nulos/indefinidos
     const dadosGraficoMetodos = Object.entries(faturamentoMetodos).map(([metodo, valor]) => {
         const valorTratado = valor ?? 0;
@@ -143,75 +177,206 @@ export const Relatorios = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '16px', marginBottom: '12px', width: '100%' }}>
 
                         {/* CARD 1: FATURAMENTO POR MÉTODO DE PAGAMENTO */}
-                        <div className="report-container" style={{ padding: '20px 25px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #f0e6e6', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
-                            <div className="container-header" style={{ marginBottom: '15px', borderBottom: '2px solid #fff1f1', paddingBottom: '6px' }}>
-                                <h2 style={{ color: '#710100', margin: '0', fontFamily: 'Abhaya Libre', fontSize: '22px' }}>Faturamento por Método</h2>
+                        <div
+                            className="report-container"
+                            style={{
+                                padding: '20px 25px',
+                                backgroundColor: '#ffffff',
+                                borderRadius: '12px',
+                                border: '1px solid #f0e6e6'
+                            }}
+                        >
+                            <div
+                                className="container-header"
+                                style={{
+                                    marginBottom: '15px',
+                                    borderBottom: '2px solid #fff1f1',
+                                    paddingBottom: '6px'
+                                }}
+                            >
+                                <h2
+                                    style={{
+                                        color: '#710100',
+                                        margin: '0',
+                                        fontFamily: 'Abhaya Libre',
+                                        fontSize: '22px'
+                                    }}
+                                >
+                                    Formas de Pagamento
+                                </h2>
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-end', height: '180px', borderBottom: '2px solid #fff1f1', paddingBottom: '5px', marginTop: '10px' }}>
-                                {dadosGraficoMetodos.length === 0 ? (
-                                    <p style={{ color: '#6c757d', fontSize: '0.85rem', fontStyle: 'italic', margin: 'auto' }}>Nenhuma venda registrada no período.</p>
-                                ) : (
-                                    dadosGraficoMetodos.map((item, idx) => (
-                                        <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '75px' }}>
-                                            {/* 💎 CORRIGIDO: Tratado com fallback em parênteses antes do toFixed */}
-                                            <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#710100', marginBottom: '4px', fontFamily: 'Georgia' }}>
-                                                R$ {(item.valor || 0).toFixed(0)}
-                                            </span>
-                                            <div style={{
-                                                width: '45px',
-                                                height: item.alturaBarra,
-                                                backgroundColor: '#710100',
-                                                borderRadius: '4px 4px 0 0',
-                                                opacity: 0.8,
-                                                transition: 'height 0.5s ease-in-out'
-                                            }}></div>
-                                            <span style={{ fontSize: '0.75rem', color: '#6c757d', marginTop: '6px', textAlign: 'center', whiteSpace: 'nowrap', fontWeight: 'bold' }}>
-                                                {item.metodo}
-                                            </span>
-                                        </div>
-                                    ))
-                                )}
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 1fr',
+                                    alignItems: 'center'
+                                }}
+                            >
+                                {/* Gráfico */}
+                                <div style={{ width: '220px', height: '220px' }}>
+                                    <ResponsiveContainer>
+                                        <PieChart>
+                                            <Pie
+                                                data={dadosPizza}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={55}
+                                                outerRadius={85}
+                                                dataKey="value"
+                                            >
+                                                {dadosPizza.map((_, index) => (
+                                                    <Cell
+                                                        key={index}
+                                                        fill={COLORS[index % COLORS.length]}
+                                                    />
+                                                ))}
+                                            </Pie>
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+
+                                {/* Legenda */}
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '15px'
+                                    }}
+                                >
+                                    {dadosPizza.map((item, index) => {
+                                        const total = dadosPizza.reduce(
+                                            (acc, cur) => acc + cur.value,
+                                            0
+                                        );
+
+                                        const porcentagem =
+                                            total > 0
+                                                ? ((item.value / total) * 100).toFixed(0)
+                                                : 0;
+
+                                        return (
+                                            <div
+                                                key={index}
+                                                style={{
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center'
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '10px'
+                                                    }}
+                                                >
+                                                    <div
+                                                        style={{
+                                                            width: '18px',
+                                                            height: '18px',
+                                                            borderRadius: '4px',
+                                                            backgroundColor:
+                                                                COLORS[index % COLORS.length]
+                                                        }}
+                                                    />
+
+                                                    <span>{item.name}</span>
+                                                </div>
+
+                                                <strong>{porcentagem}%</strong>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
 
                         {/* CARD 2: PRODUTOS MAIS VENDIDOS DA CONFEITARIA */}
-                        <div className="report-container" style={{ padding: '20px 25px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #f0e6e6', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
-                            <div className="container-header" style={{ marginBottom: '15px', borderBottom: '2px solid #fff1f1', paddingBottom: '6px' }}>
-                                <h2 style={{ color: '#710100', margin: '0', fontFamily: 'Abhaya Libre', fontSize: '22px' }}>Produtos Líderes de Vendas</h2>
+                        {/* CARD 2: PRODUTOS MAIS VENDIDOS */}
+                        <div
+                            className="report-container"
+                            style={{
+                                padding: '20px 25px',
+                                backgroundColor: '#ffffff',
+                                borderRadius: '12px',
+                                border: '1px solid #f0e6e6'
+                            }}
+                        >
+                            <div
+                                className="container-header"
+                                style={{
+                                    marginBottom: '15px',
+                                    borderBottom: '2px solid #fff1f1',
+                                    paddingBottom: '6px'
+                                }}
+                            >
+                                <h2
+                                    style={{
+                                        color: '#710100',
+                                        margin: '0',
+                                        fontFamily: 'Abhaya Libre',
+                                        fontSize: '22px'
+                                    }}
+                                >
+                                    Produtos Mais Vendidos
+                                </h2>
                             </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
-                                {maisVendidos.length === 0 ? (
-                                    <p style={{ color: '#6c757d', fontSize: '0.85rem', fontStyle: 'italic', padding: '20px 0', textAlign: 'center' }}>Sem dados de movimentação de produtos.</p>
-                                ) : (
-                                    maisVendidos.slice(0, 4).map((prod, idx) => {
-                                        const maiorQtd = Math.max(...maisVendidos.map(m => m.quantidade), 1);
-                                        const larguraBarra = `${(prod.quantidade / maiorQtd) * 100}%`;
+                            {dadosProdutos.length === 0 ? (
+                                <p
+                                    style={{
+                                        textAlign: 'center',
+                                        color: '#6c757d',
+                                        fontStyle: 'italic',
+                                        marginTop: '50px'
+                                    }}
+                                >
+                                    Nenhum produto vendido no período.
+                                </p>
+                            ) : (
+                                <div style={{ width: '100%', height: '280px' }}>
+                                    <ResponsiveContainer>
+                                        <BarChart
+                                            data={dadosProdutos}
+                                            layout="vertical"
+                                            margin={{
+                                                top: 5,
+                                                right: 40,
+                                                left: 30,
+                                                bottom: 5
+                                            }}
+                                        >
+                                            <CartesianGrid
+                                                strokeDasharray="3 3"
+                                                horizontal={false}
+                                            />
 
-                                        return (
-                                            <div key={idx}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '4px', color: '#3c1010' }}>
-                                                    <span><strong>{idx + 1}º</strong> {prod.produtoNome} <span style={{ color: '#6c757d', fontSize: '0.8rem' }}>({prod.quantidade} un)</span></span>
-                                                    {/* 💎 PROTEGIDO: Adicionado fallback caso o faturamento venha zerado */}
-                                                    <span style={{ fontWeight: 'bold', color: '#710100' }}>R$ {(prod.faturamento || 0).toFixed(2).replace('.', ',')}</span>
-                                                </div>
-                                                <div style={{ width: '100%', height: '8px', backgroundColor: '#e0e0e0', borderRadius: '4px', overflow: 'hidden' }}>
-                                                    <div style={{
-                                                        width: larguraBarra,
-                                                        height: '100%',
-                                                        backgroundColor: '#710100',
-                                                        opacity: 1 - (idx * 0.15),
-                                                        borderRadius: '4px'
-                                                    }}></div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                )}
-                            </div>
+                                            <XAxis type="number" />
+
+                                            <YAxis
+                                                type="category"
+                                                dataKey="nome"
+                                                width={120}
+                                            />
+
+                                            <Tooltip />
+
+                                            <Bar
+                                                dataKey="quantidade"
+                                                fill="#f48b94"
+                                                radius={[0, 4, 4, 0]}
+                                            >
+                                                <LabelList
+                                                    dataKey="quantidade"
+                                                    position="right"
+                                                />
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            )}
                         </div>
-
                     </div>
 
                     {/* 3. AUDITORIA FINANCEIRA COLETANDO SALDO DO DTO JAVA */}
