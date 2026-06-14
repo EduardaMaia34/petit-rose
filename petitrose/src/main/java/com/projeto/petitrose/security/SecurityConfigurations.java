@@ -54,7 +54,7 @@ public class SecurityConfigurations {
                         .requestMatchers("/checkout").permitAll()
                         .requestMatchers("/comandas/**").permitAll()
                         .requestMatchers("/comandas").permitAll()
-                        
+
                         // pedidos
                         .requestMatchers("/pedidos/**").permitAll()
                         .requestMatchers("/pedidos").permitAll()

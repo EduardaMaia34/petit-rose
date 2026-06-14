@@ -25,32 +25,32 @@ public class SecurityFilter extends OncePerRequestFilter {
     private UsuarioRepository usuarioRepository;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) 
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        
+
         var token = this.recoverToken(request);
 
         if (token != null) {
             try {
-                
+
                 String login = tokenService.validarToken(token);
-                
+
                 if (login != null && !login.isEmpty()) {
                     Usuario usuario = usuarioRepository.findByUser(login);
-                    
+
                     if (usuario != null) {
                         var authentication = new UsernamePasswordAuthenticationToken(usuario, null, usuario.getAuthorities());
                         SecurityContextHolder.getContext().setAuthentication(authentication);
                     }
                 }
             } catch (Exception e) {
-                
+
                 SecurityContextHolder.clearContext();
                 System.out.println("Erro ao validar token JWT: " + e.getMessage());
             }
         }
 
-        
+
         filterChain.doFilter(request, response);
     }
 
