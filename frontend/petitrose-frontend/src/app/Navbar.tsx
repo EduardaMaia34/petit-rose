@@ -5,7 +5,7 @@ import logoBarraPetitRose from '../assets/LogoBarra.png';
 
 interface NavbarProps {
     // Define estritamente quais são as abas válidas do sistema
-    abaAtiva: 'inicio' | 'produtos' | 'pedidos' | 'catalogo' | 'mesas' | 'relatorios';
+    abaAtiva: 'inicio' | 'produtos' | 'pedidos' | 'catalogo' | 'mesas' | 'relatorios' | 'usuarios';
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ abaAtiva }) => {
@@ -84,6 +84,13 @@ export const Navbar: React.FC<NavbarProps> = ({ abaAtiva }) => {
                     className={`nav-btn ${abaAtiva === 'relatorios' ? 'ativo' : ''}`}
                 >
                     Relatórios
+                </button>
+
+                <button
+                    onClick={() => navigate('/usuarios')}
+                    className={`nav-btn ${abaAtiva === 'usuarios' ? 'ativo' : ''}`}
+                >
+                    Usuários
                 </button>
 
                 {/* Botão de Sair */}

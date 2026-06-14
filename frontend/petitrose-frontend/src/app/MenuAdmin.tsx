@@ -263,11 +263,50 @@ export const MenuAdmin = () => {
                     </div>
 
                     {/* 🧾 SEÇÃO 3: MOVIMENTAÇÕES E AÇÕES DE ATALHO */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '15px', width: '100%' }}>
+                    <div style={{ width: '100%' }}>
 
                         <div className="report-container" style={{ padding: '20px 25px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #f0e6e6' }}>
-                            <div className="container-header" style={{ marginBottom: '8px', borderBottom: '2px solid #fff1f1', paddingBottom: '6px' }}>
-                                <h2 style={{ color: '#710100', margin: '0', fontFamily: 'Abhaya Libre', fontSize: '22px', fontWeight: 'bold' }}>Movimentações Recentes</h2>
+                            <div
+                                className="container-header"
+                                style={{
+                                    marginBottom: '8px',
+                                    borderBottom: '2px solid #fff1f1',
+                                    paddingBottom: '6px',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center'
+                                }}
+                            >
+                                <h2
+                                    style={{
+                                        color: '#710100',
+                                        margin: '0',
+                                        fontFamily: 'Abhaya Libre',
+                                        fontSize: '22px',
+                                        fontWeight: 'bold'
+                                    }}
+                                >
+                                    Movimentações Recentes
+                                </h2>
+
+                                <button
+                                    onClick={() => setIsModalDespesaAberto(true)}
+                                    style={{
+                                        backgroundColor: '#710100',
+                                        color: '#fff',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        padding: '10px 15px',
+                                        fontWeight: 'bold',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                    }}
+                                >
+                                    <MdRemove />
+                                    Registrar Saída
+                                </button>
                             </div>
 
                             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -302,20 +341,6 @@ export const MenuAdmin = () => {
                                 )}
                                 </tbody>
                             </table>
-                        </div>
-
-                        <div className="report-container" style={{ padding: '20px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #f0e6e6', height: 'fit-content' }}>
-                            <div className="container-header" style={{ marginBottom: '12px' }}>
-                                <h2 style={{ color: '#710100', fontSize: '1.1rem', fontFamily: 'Abhaya Libre', fontWeight: 'bold', margin: '0' }}>Ações Rápidas</h2>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                <button className="btn btn-sm" onClick={() => navigate('/cadastro-produto')} style={{ padding: '12px', fontSize: '0.85rem', textAlign: 'left', backgroundColor: '#710100' }}>🍰 Cadastrar Novo Produto</button>
-                                <button className="btn btn-sm" onClick={() => navigate('/controle-estoque')} style={{ padding: '12px', fontSize: '0.85rem', textAlign: 'left', backgroundColor: '#710100' }}>📦 Controle de Estoque</button>
-                                <button className="btn btn-sm" onClick={() => setIsModalDespesaAberto(true)} style={{ padding: '12px', fontSize: '0.85rem', textAlign: 'left', backgroundColor: '#710100', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                    <MdRemove /> Registrar Saída
-                                </button>
-                                <button className="btn btn-sm" onClick={() => navigate('/relatorios')} style={{ padding: '12px', fontSize: '0.85rem', textAlign: 'left', backgroundColor: '#710100' }}>📊 Painel e Relatórios PDF</button>
-                            </div>
                         </div>
 
                     </div>

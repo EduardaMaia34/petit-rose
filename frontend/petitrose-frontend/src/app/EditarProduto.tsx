@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 import { api } from './api';
+import { BiEdit, BiTrash, BiUpload, BiCheck, BiX } from 'react-icons/bi';
 import '../index.css';
 
 interface Categoria {
@@ -58,7 +59,7 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
             };
             carregarProduto();
         }
-    }, [isOpen, produtoId]);
+    }, [isOpen, produtoId, onClose]);
 
     if (!isOpen) return null;
 
@@ -109,9 +110,11 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
 
     return (
         <div style={modalOverlayStyle}>
-            {/* O Modal voltou ao tamanho normal (maxWidth: 550px) e com rolagem caso a tela seja muito baixa */}
             <div className="form-produto-container" style={{ ...modalContainerStyle, maxHeight: '90vh', overflowY: 'auto' }}>
-                <h2>Editar Produto - Petit Rose</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                    <BiEdit size={28} color="var(--vinho-texto)" />
+                    <h2 style={{ margin: 0, fontFamily: "Georgia, serif", color: 'var(--vinho-texto)' }}>Editar Produto</h2>
+                </div>
 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group" style={{ marginBottom: '15px' }}>
@@ -149,9 +152,9 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
                                 <button
                                     type="button"
                                     onClick={handleRemoverImagemCompleta}
-                                    style={{ ...btnAcaoImagemStyle, backgroundColor: 'var(--vinho-texto)', width: '120px' }}
+                                    style={{ ...btnAcaoImagemStyle, backgroundColor: 'var(--vinho-texto)', width: '140px', gap: '5px' }}
                                 >
-                                    Remover Foto
+                                    <BiTrash size={18} /> Remover Foto
                                 </button>
                             </div>
                         ) : (
@@ -160,22 +163,22 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
                                     <img src={`http://localhost:8081/uploads/${imagemAtualUrl}`} alt="Atual" style={imgCardStyle} />
 
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, width: '100%' }}>
-                                        <label style={{ ...btnAcaoImagemStyle, ...btnUploadRosaStyle, width: '100%' }}>
-                                            Alterar Foto
+                                        <label style={{ ...btnAcaoImagemStyle, ...btnUploadRosaStyle, width: '100%', gap: '5px' }}>
+                                            <BiUpload size={18} /> Alterar Foto
                                             <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                                         </label>
                                         <button
                                             type="button"
                                             onClick={handleRemoverImagemCompleta}
-                                            style={{ ...btnAcaoImagemStyle, backgroundColor: 'var(--vinho-texto)', width: '100%' }}
+                                            style={{ ...btnAcaoImagemStyle, backgroundColor: 'var(--vinho-texto)', width: '100%', gap: '5px' }}
                                         >
-                                            Remover Foto
+                                            <BiTrash size={18} /> Remover Foto
                                         </button>
                                     </div>
                                 </div>
                             ) : (
-                                <label style={{ ...btnUploadRosaStyle, display: 'block', padding: '12px', textAlign: 'center', borderRadius: 'var(--radius-p)', cursor: 'pointer', fontWeight: 'bold' }}>
-                                    + Adicionar Foto
+                                <label style={{ ...btnUploadRosaStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', textAlign: 'center', borderRadius: 'var(--radius-p)', cursor: 'pointer', fontWeight: 'bold' }}>
+                                    <BiUpload size={20} /> Adicionar Foto
                                     <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                                 </label>
                             )
@@ -188,11 +191,15 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
                     </div>
 
                     <div style={{ display: 'flex', gap: '15px', marginTop: '25px' }}>
-                        <button type="button" onClick={onClose} className="btn-voltar" style={{ flex: 1, backgroundColor: 'var(--vinho-texto)', color: '#fff', margin: 0, padding: '12px' }}>
-                            Cancelar
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            style={{ flex: 1, backgroundColor: '#600000', color: '#fff8e6', margin: 0, padding: '12px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', fontFamily: "Georgia, serif" }}
+                        >
+                            <BiX size={20} /> Cancelar
                         </button>
-                        <button type="submit" className="btn-padrao" style={{ flex: 1, margin: 0, padding: '12px' }}>
-                            Confirmar
+                        <button type="submit" className="btn-padrao" style={{ flex: 1, margin: 0, padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <BiCheck size={20} /> Confirmar
                         </button>
                     </div>
                 </form>
@@ -201,16 +208,15 @@ export const EditarProduto: React.FC<EditarProdutoProps> = ({ isOpen, produtoId,
     );
 };
 
-/* ESTILOS */
-
+/* ESTILOS INTERNOS */
 const modalOverlayStyle: React.CSSProperties = {
     position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)', display: 'flex', justifyContent: 'center',
-    alignItems: 'center', zIndex: 2000, padding: '20px', boxSizing: 'border-box'
+    backgroundColor: 'rgba(113, 1, 0, 0.25)', backdropFilter: 'blur(5px)',
+    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000, padding: '20px', boxSizing: 'border-box'
 };
 
 const modalContainerStyle: React.CSSProperties = {
-    margin: 0, width: '100%', maxWidth: '550px', boxShadow: '0 8px 30px rgba(0,0,0,0.2)'
+    margin: 0, width: '100%', maxWidth: '550px', boxShadow: '0 8px 30px rgba(0,0,0,0.2)', backgroundColor: '#fff', padding: '30px', borderRadius: '15px'
 };
 
 const btnUploadRosaStyle: React.CSSProperties = {
@@ -218,36 +224,13 @@ const btnUploadRosaStyle: React.CSSProperties = {
 };
 
 const btnAcaoImagemStyle: React.CSSProperties = {
-    display: 'inline-flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    color: '#fff',
-    padding: '6px 12px',
-    borderRadius: 'var(--radius-p)',
-    textAlign: 'center',
-    cursor: 'pointer',
-    fontWeight: 'bold',
-    fontSize: '13px',
-    border: 'none',
-    height: '34px',
-    boxSizing: 'border-box'
+    display: 'inline-flex', justifyContent: 'center', alignItems: 'center', color: '#fff', padding: '6px 12px', borderRadius: 'var(--radius-p)', textAlign: 'center', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', border: 'none', height: '38px', boxSizing: 'border-box'
 };
 
-// NOVO: Container compacto para a foto e botões ficarem alinhados de forma discreta
 const containerFotoPequenaStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '15px',
-    border: '1px solid var(--rosa-escuro)',
-    padding: '10px',
-    borderRadius: 'var(--radius-p)',
-    backgroundColor: '#fff'
+    display: 'flex', alignItems: 'center', gap: '15px', border: '1px solid var(--rosa-escuro)', padding: '10px', borderRadius: 'var(--radius-p)', backgroundColor: '#fff'
 };
 
-// NOVO: A foto agora é menor e fica no cantinho esquerdo do container
 const imgCardStyle: React.CSSProperties = {
-    width: '100px',
-    height: '80px',
-    objectFit: 'cover',
-    borderRadius: '6px'
+    width: '100px', height: '80px', objectFit: 'cover', borderRadius: '6px'
 };
