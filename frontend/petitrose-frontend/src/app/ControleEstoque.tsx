@@ -3,7 +3,7 @@ import { Navbar } from './Navbar';
 import Swal from 'sweetalert2';
 import { api } from "./api";
 import '../index.css';
-import { MdWarning, MdInventory, MdAdd } from 'react-icons/md';
+import { MdWarning, MdInventory, MdAdd, MdDelete } from 'react-icons/md';
 
 // Categorias e Unidades padrões mantidas para o formulário de cadastro local
 const categoriasInsumo = [
@@ -88,6 +88,34 @@ export const ControleEstoque = () => {
         } catch (error) {
             console.error("Erro ao sincronizar ajuste de estoque:", error);
             carregarEstoqueCompleto();
+        }
+    };
+
+    const handleExcluirInsumo = async (insumoId: string) => {
+        console.log("ID que estou tentando excluir:", insumoId);
+        const result = await Swal.fire({
+            title: 'Tem certeza?',
+            text: "Esta ação removerá o insumo permanentemente do estoque.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#710100',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sim, excluir!'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                // Chamada ao seu InsumoController no backend
+                await api.delete(`/insumos/${insumoId}`);
+
+                // Remove da interface local
+                setInsumos(prev => prev.filter(i => i.insumoId !== insumoId));
+
+                Swal.fire('Excluído!', 'O insumo foi removido com sucesso.', 'success');
+            } catch (error) {
+                console.error("Erro ao excluir:", error);
+                Swal.fire('Erro', 'Não foi possível excluir o insumo.', 'error');
+            }
         }
     };
 
@@ -282,6 +310,19 @@ export const ControleEstoque = () => {
                                                     style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #28a745', backgroundColor: '#f9fdfa', color: '#28a745', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                 >
                                                     +
+                                                </button>
+
+                                                <button
+                                                    onClick={() => handleExcluirInsumo(insumo.insumoId)}
+                                                    style={{
+                                                        width: '28px', height: '28px', borderRadius: '6px',
+                                                        border: '1px solid #ff4d4d', backgroundColor: '#fff1f1',
+                                                        color: '#ff4d4d', cursor: 'pointer', display: 'flex',
+                                                        alignItems: 'center', justifyContent: 'center'
+                                                    }}
+                                                    title="Excluir Insumo"
+                                                >
+                                                    <MdDelete />
                                                 </button>
                                             </div>
                                         </td>
