@@ -19,23 +19,41 @@ export const CardProduto: React.FC<CardProdutoProps> = ({ produto, onEditarClick
     const imagemPlaceholder = "https://placehold.co/400x400/fbbfc5/600000?text=Petit+Rose";
 
     return (
-        <div className="pedido-card" style={{ padding: '25px', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box' }}>
+        <div
+            className="pedido-card"
+            style={{
+                padding: '25px',
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                boxSizing: 'border-box',
+                backgroundColor: 'rgba(251, 191, 197, 0.2)',
+                border: '1px solid #fbbfc5',
+                borderRadius: '12px',
+                boxShadow: '0 2px 4px #fbbfc5' // Sombra bem leve para destacar sobre o fundo da página
+            }}
+        >
             <img
                 src={produto.imagemUrl ? `http://localhost:8081/uploads/${produto.imagemUrl}` : imagemPlaceholder}
                 alt={produto.nome}
                 style={{ width: '100%', height: '220px', objectFit: 'cover', borderRadius: '15px', marginBottom: '15px' }}
             />
 
-            <h3 style={{ fontFamily: 'Abhaya Libre', fontSize: '24px', color: 'var(--vinho-texto)', margin: '5px 0' }}>
+            <h3 style={{ fontFamily: 'Abhaya Libre', fontSize: '24px', color: 'var(--vinho-texto)', margin: '5px 0 0 0', fontWeight: 'bold' }}>
                 {produto.nome}
             </h3>
 
-            <p style={{ fontSize: '14px', color: '#8b0000', fontStyle: 'italic', minHeight: '40px', margin: '5px 0 15px 0', flexGrow: 1 }}>
-                {produto.descricao || "Sem descrição cadastrada."}
-            </p>
+            {produto.descricao && (
+                <p style={{ color: '#6c757d', fontSize: '14px', margin: '8px 0', flexGrow: 1, lineHeight: '1.4' }}>
+                    {produto.descricao}
+                </p>
+            )}
 
-            <div style={{ fontFamily: 'Georgia', fontSize: '22px', fontWeight: 'bold', color: 'var(--vinho-texto)', marginBottom: '20px' }}>
-                R$ {produto.valor.toFixed(2).replace('.', ',')}
+            <div style={{ margin: '15px 0', display: 'flex', alignItems: 'baseline', gap: '5px' }}>
+                <span style={{ fontSize: '14px', color: 'var(--vinho-texto)', fontWeight: 'bold' }}>R$</span>
+                <span style={{ fontSize: '26px', fontWeight: 'bold', color: 'var(--vinho-texto)', fontFamily: 'Georgia, serif' }}>
+                    {produto.valor.toFixed(2).replace('.', ',')}
+                </span>
             </div>
 
             {(onEditarClick || onDeletarClick) && (

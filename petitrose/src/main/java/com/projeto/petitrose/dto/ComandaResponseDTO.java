@@ -1,8 +1,10 @@
 package com.projeto.petitrose.dto;
 
 import com.projeto.petitrose.models.MetodoPagamento;
+import com.projeto.petitrose.models.Pedido;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public record ComandaResponseDTO(
@@ -12,5 +14,6 @@ public record ComandaResponseDTO(
         LocalDateTime dataFechamento,
         Boolean aberta,
         BigDecimal valorTotalComanda,
-        MetodoPagamento metodoPagamento
+        MetodoPagamento metodoPagamento,
+        List<Pedido> pedidos
 ) {}

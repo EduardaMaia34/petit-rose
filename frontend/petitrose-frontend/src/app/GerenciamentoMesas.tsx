@@ -11,7 +11,9 @@ import {
     MdReceipt,
     MdRestaurantMenu,
     MdShoppingBasket,
-    MdRemove
+    MdRemove,
+    MdSend,
+    MdShoppingCart
 } from 'react-icons/md';
 
 interface ProdutoBackend {
@@ -52,6 +54,9 @@ export const GerenciamentoMesas = () => {
     const [comandaAtivaId, setComandaAtivaId] = useState<string | null>(null);
     const [isModalAberto, setIsModalAberto] = useState(false);
 
+    // Rascunho local controlado antes do envio para o banco de dados
+    const [rascunhoItens, setRascunhoItens] = useState<ItemComanda[]>([]);
+
     // 1. CARREGAMENTO E SINCRO DE ENTRADA DO BANCO
     const inicializarSalao = async () => {
         try {
@@ -72,16 +77,18 @@ export const GerenciamentoMesas = () => {
                 return {
                     numeroMesa: numero,
                     aberta: comandasDaMesa.length > 0,
-                    valorTotalMesa: comandasDaMesa.reduce((acc: number, c: any) => acc + (c.valorTotalComanda || c.total || 0), 0),
+                    valorTotalMesa: comandasDaMesa.reduce((acc: number, c: any) => acc + (c.valorTotal || c.valorTotalComanda || c.total || 0), 0),
                     comandas: comandasDaMesa.map((c: any, cIdx: number) => {
                         let itensMapeados: ItemComanda[] = [];
 
+                        // 🔥 MAPEAMENTO UNIFICADO E SEGURO DOS ITENS CONFIRMADOS
+                        // Tenta extrair de c.pedidos (Lista de pedidos vinculados)
                         if (c.pedidos && Array.isArray(c.pedidos)) {
                             c.pedidos.forEach((p: any) => {
                                 if (p.itens && Array.isArray(p.itens)) {
                                     p.itens.forEach((item: any) => {
                                         itensMapeados.push({
-                                            id: item.produto?.id || item.produtoId || item.id,
+                                            id: item.id || item.produto?.id || item.produtoId,
                                             nome: item.produto?.nome || item.nomeProduto || "Item",
                                             preco: item.precoUnitario || item.produto?.valor || 0,
                                             quantidade: item.quantidade || 1
@@ -89,19 +96,25 @@ export const GerenciamentoMesas = () => {
                                     });
                                 }
                             });
-                        } else if (c.itens && Array.isArray(c.itens)) {
-                            itensMapeados = c.itens.map((item: any) => ({
-                                id: item.produto?.id || item.produtoId || item.id,
-                                nome: item.produto?.nome || item.nomeProduto || "Item",
-                                preco: item.precoUnitario || item.produto?.valor || 0,
-                                quantidade: item.quantidade || 1 // 💎 PROPRIEDADE CORRIGIDA E SINCRONIZADA
-                            }));
+                        }
+
+                        // Fallback alternativa: tenta extrair direto de c.itens ou c.itensConsolidados se vier pré-agrupado do backend
+                        const itensDiretos = c.itens || c.itensConsolidados || c.carrinho;
+                        if (itensDiretos && Array.isArray(itensDiretos) && itensMapeados.length === 0) {
+                            itensDiretos.forEach((item: any) => {
+                                itensMapeados.push({
+                                    id: item.id || item.produto?.id || item.produtoId,
+                                    nome: item.produto?.nome || item.nomeProduto || "Item",
+                                    preco: item.precoUnitario || item.produto?.valor || item.preco || 0,
+                                    quantidade: item.quantidade || 1
+                                });
+                            });
                         }
 
                         return {
                             id: c.id,
                             codigoIdentificador: `Comanda ${cIdx + 1}`,
-                            valorTotalComanda: c.valorTotalComanda || c.total || itensMapeados.reduce((acc, i) => acc + (i.preco * i.quantidade), 0),
+                            valorTotalComanda: c.valorTotal || c.valorTotalComanda || c.total || itensMapeados.reduce((acc, i) => acc + (i.preco * i.quantidade), 0),
                             carrinho: itensMapeados
                         };
                     })
@@ -115,9 +128,7 @@ export const GerenciamentoMesas = () => {
                 if (mesaAtualizada && mesaAtualizada.aberta) {
                     setMesaSelecionada(mesaAtualizada);
                 } else {
-                    setIsModalAberto(false);
-                    setMesaSelecionada(null);
-                    setComandaAtivaId(null);
+                    fecharModalLimpo();
                 }
             }
         } catch (error) {
@@ -130,6 +141,13 @@ export const GerenciamentoMesas = () => {
     useEffect(() => {
         inicializarSalao();
     }, []);
+
+    const fecharModalLimpo = () => {
+        setIsModalAberto(false);
+        setMesaSelecionada(null);
+        setComandaAtivaId(null);
+        setRascunhoItens([]);
+    };
 
     const handleAbrirMesaOuComanda = async (mesa: MesaSalao) => {
         if (!mesa.aberta) {
@@ -147,6 +165,7 @@ export const GerenciamentoMesas = () => {
         } else {
             setMesaSelecionada(mesa);
             setComandaAtivaId(mesa.comandas[0]?.id || null);
+            setRascunhoItens([]);
             setIsModalAberto(true);
         }
     };
@@ -157,6 +176,7 @@ export const GerenciamentoMesas = () => {
             const novaComandaId = res.data.id;
             await inicializarSalao();
             setComandaAtivaId(novaComandaId);
+            setRascunhoItens([]);
             setIsModalAberto(true);
         } catch (error) {
             Swal.fire('Erro', 'Não foi possível abrir a comanda.', 'error');
@@ -168,79 +188,70 @@ export const GerenciamentoMesas = () => {
         await criarNovaComandaNoBanco(mesaSelecionada.numeroMesa);
     };
 
-    const handleAdicionarItemMesa = async (produtoId: string) => {
-        if (!mesaSelecionada || !comandaAtivaId) return;
-
+    const handleAdicionarItemMesa = (produtoId: string) => {
         const produto = cardapio.find(p => p.id === produtoId);
         if (!produto) return;
 
-        setMesaSelecionada(prev => {
-            if (!prev) return null;
-            return {
-                ...prev,
-                comandas: prev.comandas.map(c => {
-                    if (c.id !== comandaAtivaId) return c;
-                    const existente = c.carrinho.find(item => item.id === produtoId);
-                    const novoCarrinho = existente
-                        ? c.carrinho.map(item => item.id === produtoId ? { ...item, quantidade: item.quantidade + 1 } : item)
-                        : [...c.carrinho, { id: produto.id, nome: produto.nome, preco: produto.valor, quantidade: 1 }];
-
-                    return { ...c, carrinho: novoCarrinho, valorTotalComanda: novoCarrinho.reduce((acc, i) => acc + (i.preco * i.quantidade), 0) };
-                })
-            };
+        setRascunhoItens(prev => {
+            const existente = prev.find(item => item.id === produtoId);
+            if (existente) {
+                return prev.map(item => item.id === produtoId ? { ...item, quantidade: item.quantidade + 1 } : item);
+            }
+            return [...prev, { id: produto.id, nome: produto.nome, preco: produto.valor, quantidade: 1 }];
         });
+    };
+
+    const handleAlterarQuantidadeRascunho = (produtoId: string, operacao: 'somar' | 'subtrair') => {
+        setRascunhoItens(prev => {
+            return prev.map(item => {
+                if (item.id !== produtoId) return item;
+                const novaQtd = operacao === 'somar' ? item.quantidade + 1 : item.quantidade - 1;
+                return { ...item, quantidade: novaQtd };
+            }).filter(item => item.quantidade > 0);
+        });
+    };
+
+    const handleLancarPedidoCompleto = async () => {
+        if (!comandaAtivaId || !mesaSelecionada || rascunhoItens.length === 0) return;
 
         try {
+            setLoading(true);
+
             await api.post(`/pedidos/comanda/${comandaAtivaId}`, {
-                itens: [{
-                    id: produtoId,         // ✨ Envia como id
-                    produtoId: produtoId,  // ✨ Envia também como produtoId (Garante compatibilidade)
-                    quantidade: 1,
+                numeroMesa: mesaSelecionada.numeroMesa,
+                itens: rascunhoItens.map(item => ({
+                    produtoId: item.id,
+                    quantidade: item.quantidade,
                     observacao: "Salão"
-                }]
+                }))
             });
+
+            setRascunhoItens([]);
             await inicializarSalao();
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Pedido lançado com sucesso!',
+                showConfirmButton: false,
+                timer: 2000
+            });
         } catch (error) {
-            console.error("Erro ao salvar item:", error);
+            console.error("Erro ao lançar pedido:", error);
+            Swal.fire('Erro', 'Não foi possível salvar o pedido no servidor.', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleAlterarQuantidadeItem = async (produtoId: string, operacao: 'somar' | 'subtrair') => {
-        if (!mesaSelecionada || !comandaAtivaId) return;
-
-        const comandaAlvo = mesaSelecionada.comandas.find(c => c.id === comandaAtivaId);
-        const itemLocal = comandaAlvo?.carrinho.find(i => i.id === produtoId);
-        if (!itemLocal) return;
-
-        const novaQtd = operacao === 'somar' ? itemLocal.quantidade + 1 : itemLocal.quantidade - 1;
-
-        setMesaSelecionada(prev => {
-            if (!prev) return null;
-            return {
-                ...prev,
-                comandas: prev.comandas.map(c => {
-                    if (c.id !== comandaAtivaId) return c;
-                    const novoCarrinho = c.carrinho.map(item => {
-                        if (item.id !== produtoId) return item;
-                        return { ...item, quantidade: novaQtd };
-                    }).filter(item => item.quantidade > 0);
-
-                    return { ...c, carrinho: novoCarrinho, valorTotalComanda: novoCarrinho.reduce((acc, i) => acc + (i.preco * i.quantidade), 0) };
-                })
-            };
-        });
-
+    const handleRemoverItemSalvo = async (produtoId: string) => {
+        if (!comandaAtivaId) return;
         try {
-            if (novaQtd === 0) {
-                await api.delete(`/pedidos/${comandaAtivaId}/item/${produtoId}`);
-            } else {
-                await api.put(`/pedidos/comanda/${comandaAtivaId}`, {
-                    itens: [{ produtoId, quantidade: novaQtd }]
-                });
-            }
+            await api.delete(`/pedidos/${comandaAtivaId}/item/${produtoId}`);
             await inicializarSalao();
         } catch (error) {
-            console.error("Erro ao alterar quantidade:", error);
+            console.error(error);
         }
     };
 
@@ -249,7 +260,6 @@ export const GerenciamentoMesas = () => {
 
         const comandaAlvo = mesaSelecionada.comandas.find(c => c.id === comandaAtivaId)!;
 
-        // 💎 CORREÇÃO CRÍTICA: Valida pelo valor acumulado devolvido pelo DTO Java, contornando o array vazio
         if (!comandaAlvo.valorTotalComanda || comandaAlvo.valorTotalComanda <= 0) {
             Swal.fire('Atenção', 'Esta comanda não possui nenhum consumo registrado.', 'warning');
             return;
@@ -270,26 +280,15 @@ export const GerenciamentoMesas = () => {
 
         try {
             setLoading(true);
-
-            // Executa o PUT exato que bate com o @PutMapping("/{id}/fechar") do seu ComandaController.java
             await api.put(`/comandas/${comandaAtivaId}/fechar?metodoPagamento=${formaPagamento}`);
 
-            // Limpa as telas locais se o banco processar sem erros
-            setIsModalAberto(false);
-            setMesaSelecionada(null);
-            setComandaAtivaId(null);
+            fecharModalLimpo();
             await inicializarSalao();
 
-            Swal.fire({
-                icon: 'success',
-                title: 'Mesa Liberada!',
-                text: 'A comanda foi finalizada e o fluxo de caixa atualizado.',
-                confirmButtonColor: '#710100'
-            });
-
+            Swal.fire({ icon: 'success', title: 'Mesa Liberada!', text: 'A comanda foi finalizada e o fluxo de caixa atualizado.', confirmButtonColor: '#710100' });
         } catch (error) {
-            console.error("Erro ao fechar comanda:", error);
-            Swal.fire('Erro', 'Não foi possível fechar a comanda no servidor.', 'error');
+            console.error(error);
+            Swal.fire('Erro', 'Não foi possível fechar a comanda.', 'error');
         } finally {
             setLoading(false);
         }
@@ -349,7 +348,7 @@ export const GerenciamentoMesas = () => {
                     {/* MODAL DETALHE DAS COMANDAS */}
                     {isModalAberto && mesaSelecionada && (
                         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(113, 1, 0, 0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999, backdropFilter: 'blur(3px)' }}>
-                            <div className="report-container" style={{ backgroundColor: '#ffffff', padding: '25px', width: '560px', borderRadius: '15px', border: '1px solid #f0e6e6', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            <div className="report-container" style={{ backgroundColor: '#ffffff', padding: '25px', width: '580px', borderRadius: '15px', border: '1px solid #f0e6e6', display: 'flex', flexDirection: 'column', gap: '15px' }}>
 
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #fff1f1', paddingBottom: '12px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -358,12 +357,12 @@ export const GerenciamentoMesas = () => {
                                         </div>
                                         <h2 style={{ color: '#710100', margin: 0, fontFamily: 'Abhaya Libre', fontSize: '24px', fontWeight: 'bold' }}>Atendimento Mesa {String(mesaSelecionada.numeroMesa).padStart(2, '0')}</h2>
                                     </div>
-                                    <button onClick={() => { setIsModalAberto(false); setMesaSelecionada(null); setComandaAtivaId(null); inicializarSalao(); }} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: '#6c757d' }}>&times;</button>
+                                    <button onClick={fecharModalLimpo} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: '#6c757d' }}>&times;</button>
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', borderBottom: '1px solid #eee' }}>
                                     {mesaSelecionada.comandas.map(c => (
-                                        <button key={c.id} onClick={() => setComandaAtivaId(c.id)} style={{ padding: '8px 15px', border: '1px solid #ced4da', borderRadius: '8px 8px 0 0', cursor: 'pointer', backgroundColor: comandaAtivaId === c.id ? '#710100' : '#f8f9fa', color: comandaAtivaId === c.id ? '#fff' : '#495057', fontWeight: 'bold' }}>{c.codigoIdentificador}</button>
+                                        <button key={c.id} onClick={() => { setComandaAtivaId(c.id); setRascunhoItens([]); }} style={{ padding: '8px 15px', border: '1px solid #ced4da', borderRadius: '8px 8px 0 0', cursor: 'pointer', backgroundColor: comandaAtivaId === c.id ? '#710100' : '#f8f9fa', color: comandaAtivaId === c.id ? '#fff' : '#495057', fontWeight: 'bold' }}>{c.codigoIdentificador}</button>
                                     ))}
                                     <button onClick={handleAdicionarMaisUmaComanda} style={{ padding: '8px 12px', border: '1px dashed #28a745', borderRadius: '8px', cursor: 'pointer', backgroundColor: '#f4fbf7', color: '#28a745', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}><MdAdd/> Nova Comanda</button>
                                 </div>
@@ -373,7 +372,7 @@ export const GerenciamentoMesas = () => {
                                     return (
                                         <>
                                             <div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}><MdRestaurantMenu color="#6c757d"/><strong style={{ fontSize: '13px', color: '#6c757d' }}>Adicionar do cardápio real a esta comanda:</strong></div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}><MdRestaurantMenu color="#6c757d"/><strong style={{ fontSize: '13px', color: '#6c757d' }}>Selecione os doces para montar o rascunho:</strong></div>
                                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', maxHeight: '110px', overflowY: 'auto', paddingRight: '2px' }}>
                                                     {cardapio.map(prod => (
                                                         <button key={prod.id} onClick={() => handleAdicionarItemMesa(prod.id)} className="btn btn-sm" style={{ fontSize: '11px', backgroundColor: '#fffcfc', border: '1px solid #ffcccc', color: '#710100', padding: '10px', borderRadius: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -383,20 +382,48 @@ export const GerenciamentoMesas = () => {
                                                 </div>
                                             </div>
 
-                                            <div style={{ borderTop: '1px solid #fff1f1', paddingTop: '10px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}><MdShoppingBasket color="#6c757d"/><strong style={{ fontSize: '13px', color: '#6c757d' }}>Itens Consumidos:</strong></div>
-                                                <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '2px' }}>
-                                                    {comandaSelecionada.carrinho.length === 0 ? (
-                                                        <p style={{ textAlign: 'center', fontSize: '13px', color: '#8c7a7a', margin: '15px 0', fontStyle: 'italic' }}>Comanda vazia. Adicione um doce acima!</p>
+                                            {/* RASCUNHO LOCAL DO PEDIDO */}
+                                            <div style={{ borderTop: '1px solid #ffecf0', backgroundColor: '#fffdfd', padding: '10px', borderRadius: '10px', border: '1px dashed #fbbfc5' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#c00000', fontWeight: 'bold', fontSize: '13px' }}>
+                                                        <MdShoppingCart size={16} />
+                                                        <span>Rascunho do Novo Pedido:</span>
+                                                    </div>
+                                                    {rascunhoItens.length > 0 && (
+                                                        <button onClick={handleLancarPedidoCompleto} style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: '#28a745', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>
+                                                            <MdSend/> Lançar Pedido
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div style={{ maxHeight: '90px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                    {rascunhoItens.length === 0 ? (
+                                                        <p style={{ fontSize: '12px', color: '#999', margin: '5px 0', fontStyle: 'italic', textAlign: 'center' }}>Nenhum item selecionado no rascunho atual.</p>
                                                     ) : (
-                                                        comandaSelecionada.carrinho.map(item => (
-                                                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 15px', backgroundColor: '#fffcfc', border: '1px solid #f8eeee', borderRadius: '10px' }}>
-                                                                <span style={{ fontWeight: '500', color: '#3c1010', fontSize: '0.9rem' }}>{item.nome} (R$ {item.preco.toFixed(2)})</span>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                                    <button onClick={() => handleAlterarQuantidadeItem(item.id, 'subtrair')} style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #ced4da', backgroundColor: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}><MdRemove size={12}/></button>
-                                                                    <strong style={{ minWidth: '15px', textAlign: 'center', fontSize: '0.9rem' }}>{item.quantidade}</strong>
-                                                                    <button onClick={() => handleAlterarQuantidadeItem(item.id, 'somar')} style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #ced4da', backgroundColor: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}><MdAdd size={12}/></button>
+                                                        rascunhoItens.map(item => (
+                                                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', backgroundColor: '#fff', border: '1px solid #ffebed', borderRadius: '6px' }}>
+                                                                <span style={{ fontSize: '13px', color: '#333' }}>{item.nome}</span>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                    <button onClick={() => handleAlterarQuantidadeRascunho(item.id, 'subtrair')} style={{ width: '20px', height: '24px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>-</button>
+                                                                    <strong style={{ fontSize: '13px' }}>{item.quantidade}</strong>
+                                                                    <button onClick={() => handleAlterarQuantidadeRascunho(item.id, 'somar')} style={{ width: '20px', height: '24px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
                                                                 </div>
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* CONSUMO JÁ CONFIRMADO NO BANCO */}
+                                            <div style={{ borderTop: '1px solid #fff1f1', paddingTop: '5px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}><MdShoppingBasket color="#6c757d"/><strong style={{ fontSize: '13px', color: '#6c757d' }}>Consumo já Confirmado na Mesa:</strong></div>
+                                                <div style={{ maxHeight: '110px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '5px', paddingRight: '2px' }}>
+                                                    {comandaSelecionada.carrinho.length === 0 ? (
+                                                        <p style={{ textAlign: 'center', fontSize: '13px', color: '#8c7a7a', margin: '10px 0', fontStyle: 'italic' }}>Nenhum pedido faturado para esta comanda ainda.</p>
+                                                    ) : (
+                                                        comandaSelecionada.carrinho.map((item, idx) => (
+                                                            <div key={`${item.id}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: '#fcfcfc', border: '1px solid #f0f0f0', borderRadius: '8px' }}>
+                                                                <span style={{ color: '#555', fontSize: '0.85rem' }}>{item.nome} (R$ {item.preco.toFixed(2)}) x <strong>{item.quantidade}</strong></span>
+                                                                <button onClick={() => handleRemoverItemSalvo(item.id)} style={{ background: 'none', border: 'none', color: '#dc3545', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>Remover</button>
                                                             </div>
                                                         ))
                                                     )}
@@ -411,7 +438,7 @@ export const GerenciamentoMesas = () => {
                                                     </h3>
                                                 </div>
                                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <button onClick={() => { setIsModalAberto(false); setMesaSelecionada(null); setComandaAtivaId(null); inicializarSalao(); }} className="status-btn-em-preparo" style={{ backgroundColor: '#f5f5f5', color: '#6c757d', border: '1px solid #ced4da', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>Voltar</button>
+                                                    <button onClick={fecharModalLimpo} className="status-btn-em-preparo" style={{ backgroundColor: '#f5f5f5', color: '#6c757d', border: '1px solid #ced4da', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>Voltar</button>
                                                     <button onClick={handleFecharComandaUnica} className="status-btn-pagamento" style={{ padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px' }}><MdReceipt/> Fechar Conta</button>
                                                 </div>
                                             </div>

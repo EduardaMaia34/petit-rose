@@ -255,7 +255,8 @@ public class ComandaService {
                 comanda.getDataFechamento(),
                 comanda.getAberta(),
                 valorTotalComanda,
-                comanda.getMetodoPagamento()
+                comanda.getMetodoPagamento(),
+                comanda.getPedidos()
         );
     }
 }
