@@ -52,7 +52,7 @@ export const GerenciamentoMesas = () => {
     const [comandaAtivaId, setComandaAtivaId] = useState<string | null>(null);
     const [isModalAberto, setIsModalAberto] = useState(false);
 
-    // 1. CARREGAMENTO E SINCRO DE ENTRADA DO BANCO (CORRIGIDO)
+    // 1. CARREGAMENTO E SINCRO DE ENTRADA DO BANCO
     const inicializarSalao = async () => {
         try {
             if (!isModalAberto) setLoading(true);
@@ -63,8 +63,6 @@ export const GerenciamentoMesas = () => {
             ]);
 
             const todasComandas = responseComandas.data;
-            console.log("DADOS REAIS QUE VEM DO BANCO DA MARI:", todasComandas);
-
             setCardapio(responseProdutos.data.filter((p: any) => p.catalogoAtivo || p.catalogo_ativo));
 
             const salaoMapeado: MesaSalao[] = Array.from({ length: 9 }, (_, idx) => {
@@ -76,8 +74,6 @@ export const GerenciamentoMesas = () => {
                     aberta: comandasDaMesa.length > 0,
                     valorTotalMesa: comandasDaMesa.reduce((acc: number, c: any) => acc + (c.valorTotalComanda || c.total || 0), 0),
                     comandas: comandasDaMesa.map((c: any, cIdx: number) => {
-
-                        // ✨ MAPEAMENTO BLINDADO: Extrai os itens do formato complexo do backend
                         let itensMapeados: ItemComanda[] = [];
 
                         if (c.pedidos && Array.isArray(c.pedidos)) {
@@ -98,7 +94,7 @@ export const GerenciamentoMesas = () => {
                                 id: item.produto?.id || item.produtoId || item.id,
                                 nome: item.produto?.nome || item.nomeProduto || "Item",
                                 preco: item.precoUnitario || item.produto?.valor || 0,
-                                幻想idade: item.quantidade || 1
+                                quantidade: item.quantidade || 1 // 💎 PROPRIEDADE CORRIGIDA E SINCRONIZADA
                             }));
                         }
 
@@ -114,7 +110,6 @@ export const GerenciamentoMesas = () => {
 
             setMesas(salaoMapeado);
 
-            // Mantém as edições locais em sincronia sem forçar a troca forçada de abas
             if (mesaSelecionada) {
                 const mesaAtualizada = salaoMapeado.find(m => m.numeroMesa === mesaSelecionada.numeroMesa);
                 if (mesaAtualizada && mesaAtualizada.aberta) {
@@ -173,14 +168,12 @@ export const GerenciamentoMesas = () => {
         await criarNovaComandaNoBanco(mesaSelecionada.numeroMesa);
     };
 
-    // 2. INSERÇÃO REATIVA NA ABA ATIVA CORRETA
     const handleAdicionarItemMesa = async (produtoId: string) => {
         if (!mesaSelecionada || !comandaAtivaId) return;
 
         const produto = cardapio.find(p => p.id === produtoId);
         if (!produto) return;
 
-        // Feedback imediato no state do React antes do banco responder
         setMesaSelecionada(prev => {
             if (!prev) return null;
             return {
@@ -197,10 +190,14 @@ export const GerenciamentoMesas = () => {
             };
         });
 
-        // Envia para a rota do back-end (/pedidos/comanda/{id})
         try {
             await api.post(`/pedidos/comanda/${comandaAtivaId}`, {
-                itens: [{ produtoId, quantidade: 1, observacao: "Salão" }]
+                itens: [{
+                    id: produtoId,         // ✨ Envia como id
+                    produtoId: produtoId,  // ✨ Envia também como produtoId (Garante compatibilidade)
+                    quantidade: 1,
+                    observacao: "Salão"
+                }]
             });
             await inicializarSalao();
         } catch (error) {
@@ -208,7 +205,6 @@ export const GerenciamentoMesas = () => {
         }
     };
 
-    // 3. ALTERAÇÃO DE QUANTIDADE E EXCLUSÃO REATIVA
     const handleAlterarQuantidadeItem = async (produtoId: string, operacao: 'somar' | 'subtrair') => {
         if (!mesaSelecionada || !comandaAtivaId) return;
 
@@ -218,7 +214,6 @@ export const GerenciamentoMesas = () => {
 
         const novaQtd = operacao === 'somar' ? itemLocal.quantidade + 1 : itemLocal.quantidade - 1;
 
-        // Atualização visual na hora
         setMesaSelecionada(prev => {
             if (!prev) return null;
             return {
@@ -254,8 +249,9 @@ export const GerenciamentoMesas = () => {
 
         const comandaAlvo = mesaSelecionada.comandas.find(c => c.id === comandaAtivaId)!;
 
-        if (comandaAlvo.carrinho.length === 0) {
-            Swal.fire('Atenção', 'Adicione pelo menos um produto antes de fechar a conta.', 'warning');
+        // 💎 CORREÇÃO CRÍTICA: Valida pelo valor acumulado devolvido pelo DTO Java, contornando o array vazio
+        if (!comandaAlvo.valorTotalComanda || comandaAlvo.valorTotalComanda <= 0) {
+            Swal.fire('Atenção', 'Esta comanda não possui nenhum consumo registrado.', 'warning');
             return;
         }
 
@@ -274,16 +270,26 @@ export const GerenciamentoMesas = () => {
 
         try {
             setLoading(true);
+
+            // Executa o PUT exato que bate com o @PutMapping("/{id}/fechar") do seu ComandaController.java
             await api.put(`/comandas/${comandaAtivaId}/fechar?metodoPagamento=${formaPagamento}`);
 
+            // Limpa as telas locais se o banco processar sem erros
             setIsModalAberto(false);
             setMesaSelecionada(null);
             setComandaAtivaId(null);
             await inicializarSalao();
 
-            Swal.fire({ icon: 'success', title: 'Comanda finalizada com sucesso!' });
+            Swal.fire({
+                icon: 'success',
+                title: 'Mesa Liberada!',
+                text: 'A comanda foi finalizada e o fluxo de caixa atualizado.',
+                confirmButtonColor: '#710100'
+            });
+
         } catch (error) {
-            Swal.fire('Erro', 'Não foi possível fechar a comanda.', 'error');
+            console.error("Erro ao fechar comanda:", error);
+            Swal.fire('Erro', 'Não foi possível fechar a comanda no servidor.', 'error');
         } finally {
             setLoading(false);
         }
@@ -307,7 +313,6 @@ export const GerenciamentoMesas = () => {
 
                     {/* GRID SALÃO */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '15px', width: '100%' }}>
-
                         {/* CARD BALCÃO */}
                         <div className="stat-box" style={{ padding: '20px 15px', textAlign: 'center', border: '1px solid #ffcccc', borderRadius: '12px', background: '#fff1f1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', minHeight: '220px' }}>
                             <div style={{ width: '46px', height: '46px', borderRadius: '50%', backgroundColor: '#ffe4e4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -323,7 +328,7 @@ export const GerenciamentoMesas = () => {
                         {/* MESAS */}
                         {mesas.map((mesa) => (
                             <div key={mesa.numeroMesa} className="stat-box" style={{ padding: '20px 15px', textAlign: 'center', border: '1px solid #f0e6e6', borderRadius: '12px', background: '#ffffff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', minHeight: '220px' }}>
-                                <div style={{ width: '46px', height: '46px', borderRadius: '50%', backgroundColor: mesa.aberta ? '#fdf2f2' : '#e6f7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 0, margin: '0 auto' }}>
+                                <div style={{ width: '46px', height: '46px', borderRadius: '50%', backgroundColor: mesa.aberta ? '#fdf2f2' : '#e6f7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
                                     <MdTableRestaurant style={{ fontSize: '1.6rem', color: mesa.aberta ? '#710100' : '#28a745' }} />
                                 </div>
                                 <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -356,7 +361,6 @@ export const GerenciamentoMesas = () => {
                                     <button onClick={() => { setIsModalAberto(false); setMesaSelecionada(null); setComandaAtivaId(null); inicializarSalao(); }} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: '#6c757d' }}>&times;</button>
                                 </div>
 
-                                {/* LISTA DE ABAS INTERNAS */}
                                 <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', borderBottom: '1px solid #eee' }}>
                                     {mesaSelecionada.comandas.map(c => (
                                         <button key={c.id} onClick={() => setComandaAtivaId(c.id)} style={{ padding: '8px 15px', border: '1px solid #ced4da', borderRadius: '8px 8px 0 0', cursor: 'pointer', backgroundColor: comandaAtivaId === c.id ? '#710100' : '#f8f9fa', color: comandaAtivaId === c.id ? '#fff' : '#495057', fontWeight: 'bold' }}>{c.codigoIdentificador}</button>
@@ -364,7 +368,6 @@ export const GerenciamentoMesas = () => {
                                     <button onClick={handleAdicionarMaisUmaComanda} style={{ padding: '8px 12px', border: '1px dashed #28a745', borderRadius: '8px', cursor: 'pointer', backgroundColor: '#f4fbf7', color: '#28a745', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}><MdAdd/> Nova Comanda</button>
                                 </div>
 
-                                {/* PRODUTOS DA COMANDA ATIVA */}
                                 {comandaAtivaId && mesaSelecionada.comandas.find(c => c.id === comandaAtivaId) && (() => {
                                     const comandaSelecionada = mesaSelecionada.comandas.find(c => c.id === comandaAtivaId)!;
                                     return (
