@@ -41,12 +41,10 @@ export const Relatorios = () => {
             } else if (filtroPeriodo === 'semana') {
                 dataInicio.setDate(agora.getDate() - 7);
             } else if (filtroPeriodo === 'mes') {
-                // Assume o padrão de 30 dias atrás configurado no Java ou força o início do mês atual
                 dataInicio.setDate(1);
                 dataInicio.setHours(0, 0, 0, 0);
             }
 
-            // Converte para o padrão ISO que o @DateTimeFormat do Java espera
             const queryInicio = dataInicio.toISOString();
             const queryFim = agora.toISOString();
 
@@ -66,7 +64,6 @@ export const Relatorios = () => {
         }
     };
 
-    // Recarrega o painel toda vez que o usuário alterar o select de período
     useEffect(() => {
         buscarDadosRelatorio();
     }, [filtroPeriodo]);
@@ -89,18 +86,20 @@ export const Relatorios = () => {
         });
     };
 
-    // Definição de valores padrão caso a API ainda não tenha retornado dados
-    const totalEntradas = dadosRelatorio?.totalEntradas || 0;
-    const totalSaidas = dadosRelatorio?.totalSaidas || 0;
-    const saldoConsolidado = dadosRelatorio?.saldo || 0;
+    // Proteção de valores padrão com fallback para zero
+    const totalEntradas = dadosRelatorio?.totalEntradas ?? 0;
+    const totalSaidas = dadosRelatorio?.totalSaidas ?? 0;
+    const saldoConsolidado = dadosRelatorio?.saldo ?? 0;
     const maisVendidos = dadosRelatorio?.itensMaisVendidos || [];
     const faturamentoMetodos = dadosRelatorio?.faturamentoPorMetodoPagamento || {};
 
-    // Mapeia os dados do dicionário de métodos de pagamento para o gráfico de barras
+    // Mapeia os dados protegendo contra valores nulos/indefinidos
     const dadosGraficoMetodos = Object.entries(faturamentoMetodos).map(([metodo, valor]) => {
-        const maiorValor = Math.max(...Object.values(faturamentoMetodos), 1);
-        const alturaCalculada = `${(valor / maiorValor) * 100}%`;
-        return { metodo, valor, alturaBarra: alturaCalculada };
+        const valorTratado = valor ?? 0;
+        const valoresLimpos = Object.values(faturamentoMetodos).map(v => v ?? 0);
+        const maiorValor = Math.max(...valoresLimpos, 1);
+        const alturaCalculada = `${(valorTratado / maiorValor) * 100}%`;
+        return { metodo, valor: valorTratado, alturaBarra: alturaCalculada };
     });
 
     return (
@@ -155,8 +154,9 @@ export const Relatorios = () => {
                                 ) : (
                                     dadosGraficoMetodos.map((item, idx) => (
                                         <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '75px' }}>
+                                            {/* 💎 CORRIGIDO: Tratado com fallback em parênteses antes do toFixed */}
                                             <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#710100', marginBottom: '4px', fontFamily: 'Georgia' }}>
-                                                R$ {item.valor.toFixed(0)}
+                                                R$ {(item.valor || 0).toFixed(0)}
                                             </span>
                                             <div style={{
                                                 width: '45px',
@@ -193,7 +193,8 @@ export const Relatorios = () => {
                                             <div key={idx}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '4px', color: '#3c1010' }}>
                                                     <span><strong>{idx + 1}º</strong> {prod.produtoNome} <span style={{ color: '#6c757d', fontSize: '0.8rem' }}>({prod.quantidade} un)</span></span>
-                                                    <span style={{ fontWeight: 'bold', color: '#710100' }}>R$ {prod.faturamento.toFixed(2).replace('.', ',')}</span>
+                                                    {/* 💎 PROTEGIDO: Adicionado fallback caso o faturamento venha zerado */}
+                                                    <span style={{ fontWeight: 'bold', color: '#710100' }}>R$ {(prod.faturamento || 0).toFixed(2).replace('.', ',')}</span>
                                                 </div>
                                                 <div style={{ width: '100%', height: '8px', backgroundColor: '#e0e0e0', borderRadius: '4px', overflow: 'hidden' }}>
                                                     <div style={{
@@ -222,15 +223,17 @@ export const Relatorios = () => {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginTop: '10px' }}>
                             <div style={{ padding: '12px 15px', backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #f0e6e6', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                 <span style={{ fontSize: '0.78rem', color: '#6c757d', fontWeight: 'bold' }}>Total de Entradas (Faturamento)</span>
+                                {/* 💎 PROTEGIDO: Evita quebra se totalEntradas for nulo */}
                                 <h3 style={{ color: '#28a745', margin: '0', fontSize: '1.4rem', fontWeight: 'bold', fontFamily: 'Georgia', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <MdAdd style={{ fontSize: '1.1rem' }} /> R$ {totalEntradas.toFixed(2).replace('.', ',')}
+                                    <MdAdd style={{ fontSize: '1.1rem' }} /> R$ {(totalEntradas || 0).toFixed(2).replace('.', ',')}
                                 </h3>
                             </div>
 
                             <div style={{ padding: '12px 15px', backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #f0e6e6', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                 <span style={{ fontSize: '0.78rem', color: '#6c757d', fontWeight: 'bold' }}>Total de Saídas (Despesas)</span>
+                                {/* 💎 PROTEGIDO: Evita quebra se totalSaidas for nulo */}
                                 <h3 style={{ color: '#ff4d4d', margin: '0', fontSize: '1.4rem', fontWeight: 'bold', fontFamily: 'Georgia', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <MdRemoveCircleOutline style={{ fontSize: '1.1rem' }} /> R$ {totalSaidas.toFixed(2).replace('.', ',')}
+                                    <MdRemoveCircleOutline style={{ fontSize: '1.1rem' }} /> R$ {(totalSaidas || 0).toFixed(2).replace('.', ',')}
                                 </h3>
                             </div>
 
@@ -244,6 +247,7 @@ export const Relatorios = () => {
                                 gap: '2px'
                             }}>
                                 <span style={{ fontSize: '0.78rem', color: saldoConsolidado >= 0 ? '#1e5e3a' : '#ff4d4d', fontWeight: 'bold' }}>Saldo Líquido Período</span>
+                                {/* 💎 PROTEGIDO: Evita quebra se saldoConsolidado for nulo */}
                                 <h3 style={{
                                     color: saldoConsolidado >= 0 ? '#28a745' : '#ff4d4d',
                                     margin: '0',
@@ -254,7 +258,7 @@ export const Relatorios = () => {
                                     alignItems: 'center',
                                     gap: '6px'
                                 }}>
-                                    <MdCheckCircle style={{ fontSize: '1.1rem' }} /> R$ {saldoConsolidado.toFixed(2).replace('.', ',')}
+                                    <MdCheckCircle style={{ fontSize: '1.1rem' }} /> R$ {(saldoConsolidado || 0).toFixed(2).replace('.', ',')}
                                 </h3>
                             </div>
                         </div>

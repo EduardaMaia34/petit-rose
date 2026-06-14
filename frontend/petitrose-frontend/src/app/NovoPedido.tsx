@@ -143,7 +143,7 @@ export const NovoPedido = () => {
                             <label>Nova Comanda na Mesa:</label>
                             <div style={{ display: 'flex', gap: '10px' }}>
                                 <select value={mesaSelecionadaParaNovaComanda} onChange={(e) => setMesaSelecionadaParaNovaComanda(e.target.value)} style={{ width: '80px' }}>
-                                    {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(n => (
+                                    {[1,2,3,4,5,6,7,8,9].map(n => (
                                         <option key={n} value={n}>Mesa {n}</option>
                                     ))}
                                 </select>

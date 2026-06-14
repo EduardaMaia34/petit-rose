@@ -195,7 +195,7 @@ export const ControleEstoque = () => {
 
     return (
         <div className="dashboard-page">
-            <Navbar abaAtiva="produtos" />
+            <Navbar abaAtiva="estoque" />
 
             <div className="main-container">
                 <div className="content-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
