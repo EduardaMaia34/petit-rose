@@ -1,8 +1,10 @@
-import  { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from './api';
 import { Navbar } from './Navbar';
 import { FinalizarPedidoModal } from './FinalizarPedidoModal';
 import Swal from 'sweetalert2';
+import {  BiTrash } from 'react-icons/bi';
+import { useNavigate } from 'react-router-dom'; // 🔥 Importado para fazer o redirecionamento
 import '../index.css';
 
 export const NovoPedido = () => {
@@ -13,10 +15,13 @@ export const NovoPedido = () => {
     const [comandaId, setComandaId] = useState('');
     const [prodSelecionado, setProdSelecionado] = useState('');
     const [qtd, setQtd] = useState(1);
+    const [observacao, setObservacao] = useState('');
 
     const [mesaSelecionadaParaNovaComanda, setMesaSelecionadaParaNovaComanda] = useState('1');
     const [criandoComanda, setCriandoComanda] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const navigate = useNavigate(); // 🔥 Inicializado o navegador de rotas
 
     const carregarComandasAtivas = async () => {
         try {
@@ -70,15 +75,33 @@ export const NovoPedido = () => {
     };
 
     const adicionarItem = () => {
+        if (!prodSelecionado) return;
         const produto = produtos.find(p => p.id === prodSelecionado);
         if (!produto) return;
 
-        const existente = itensPedido.find(i => i.id === produto.id);
+        const existente = itensPedido.find(i => i.id === produto.id && i.observacao === observacao);
         if (existente) {
-            setItensPedido(itensPedido.map(i => i.id === produto.id ? { ...i, quantidade: i.quantidade + qtd } : i));
+            setItensPedido(itensPedido.map(i =>
+                (i.id === produto.id && i.observacao === observacao)
+                    ? { ...i, quantidade: i.quantidade + qtd }
+                    : i
+            ));
         } else {
-            setItensPedido([...itensPedido, { id: produto.id, nome: produto.nome, quantidade: qtd, preco: produto.valor }]);
+            setItensPedido([...itensPedido, {
+                id: produto.id,
+                nome: produto.nome,
+                quantidade: qtd,
+                preco: produto.valor,
+                observacao: observacao
+            }]);
         }
+        setProdSelecionado('');
+        setQtd(1);
+        setObservacao('');
+    };
+
+    const removerItemRascunho = (index: number) => {
+        setItensPedido(itensPedido.filter((_, i) => i !== index));
     };
 
     const calcularTotal = () => itensPedido.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
@@ -99,13 +122,11 @@ export const NovoPedido = () => {
         <div className="dashboard-page">
             <Navbar abaAtiva="pedidos" />
             <div className="main-container">
-                <h2 style={{ color: '#600000', fontFamily: 'Abhaya Libre, serif' }}>Lançar Pedido na Comanda</h2>
+                <h2 style={{ color: '#600000', fontFamily: 'Georgia, serif' }}>Lançar Pedido na Comanda</h2>
 
                 <div className="form-produto-container" style={{ maxWidth: '100%', margin: '20px 0' }}>
-
                     <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr', gap: '20px', alignItems: 'end' }}>
 
-                        {/* 1. DROPDOWN DE COMANDAS ATIVAS */}
                         <div className="form-group" style={{ marginBottom: 0 }}>
                             <label>Selecione a Comanda Ativa *</label>
                             <select value={comandaId} onChange={(e) => setComandaId(e.target.value)} required>
@@ -118,26 +139,15 @@ export const NovoPedido = () => {
                             </select>
                         </div>
 
-                        {/* 2. CONTROLADOR PARA CRIAR NOVA COMANDA NA MESA */}
                         <div className="form-group" style={{ marginBottom: 0, borderLeft: '2px dashed #fbbfc5', paddingLeft: '20px' }}>
                             <label>Nova Comanda na Mesa:</label>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                <select
-                                    value={mesaSelecionadaParaNovaComanda}
-                                    onChange={(e) => setMesaSelecionadaParaNovaComanda(e.target.value)}
-                                    style={{ width: '80px' }}
-                                >
+                                <select value={mesaSelecionadaParaNovaComanda} onChange={(e) => setMesaSelecionadaParaNovaComanda(e.target.value)} style={{ width: '80px' }}>
                                     {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(n => (
                                         <option key={n} value={n}>Mesa {n}</option>
                                     ))}
                                 </select>
-                                <button
-                                    type="button"
-                                    className="btn-padrao"
-                                    onClick={handleAbrirNovaComandaMesa}
-                                    disabled={criandoComanda}
-                                    style={{ backgroundColor: '#600000', color: '#ffffe3', marginBottom: 0, flex: 1, height: '42px' }}
-                                >
+                                <button type="button" className="btn-padrao" onClick={handleAbrirNovaComandaMesa} disabled={criandoComanda} style={{ backgroundColor: '#600000', color: '#ffffe3', marginBottom: 0, flex: 1, height: '42px' }}>
                                     {criandoComanda ? 'Abrindo...' : '+ Abrir Conta'}
                                 </button>
                             </div>
@@ -147,42 +157,74 @@ export const NovoPedido = () => {
                     <hr style={{ border: '1px dashed #fbbfc5', margin: '20px 0' }} />
 
                     <h3>Produtos</h3>
-                    <div className="content-wrapper" style={{ gridTemplateColumns: '3fr 1fr 1fr', gap: '15px', alignItems: 'end' }}>
-                        <div className="form-group">
+                    <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr 2fr auto', gap: '15px', alignItems: 'end' }}>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
                             <label>Doce / Item</label>
                             <select value={prodSelecionado} onChange={(e) => setProdSelecionado(e.target.value)}>
                                 <option value="">Escolha uma delícia da Petit Rose...</option>
                                 {produtos.map(p => <option key={p.id} value={p.id}>{p.nome} - R$ {p.valor.toFixed(2)}</option>)}
                             </select>
                         </div>
-                        <div className="form-group">
+                        <div className="form-group" style={{ marginBottom: 0 }}>
                             <label>Qtd.</label>
-                            <input type="number" value={qtd} min="1" onChange={(e) => setQtd(parseInt(e.target.value))} />
+                            <input type="number" value={qtd} min="1" onChange={(e) => setQtd(parseInt(e.target.value) || 1)} />
+                        </div>
+                        <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label>Observação</label>
+                            <input type="text" placeholder="Ex: Sem açúcar..." value={observacao} onChange={(e) => setObservacao(e.target.value)} />
                         </div>
                         <button className="btn-padrao" onClick={adicionarItem} style={{ marginBottom: '0', height: '45px' }}>
                             + Inserir
                         </button>
                     </div>
 
-                    <div className="produtos-table-container" style={{ marginTop: '30px' }}>
-                        <table className="produtos-table">
+                    <div className="produtos-table-container" style={{ marginTop: '30px', border: '1px solid #fbbfc5', borderRadius: '12px', overflow: 'hidden' }}>
+                        <table className="produtos-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Quantidade</th>
-                                <th>Preço Unitário</th>
-                                <th>Subtotal</th>
+                            <tr style={{ backgroundColor: '#fff5f5', color: '#600000' }}>
+                                <th style={{ padding: '12px' }}>Item</th>
+                                <th style={{ padding: '12px' }}>Quantidade</th>
+                                <th style={{ padding: '12px' }}>Preço Unitário</th>
+                                <th style={{ padding: '12px' }}>Subtotal</th>
+                                <th style={{ padding: '12px', textAlign: 'center', width: '80px' }}>Remover</th>
                             </tr>
                             </thead>
                             <tbody>
-                            {itensPedido.map((item, idx) => (
-                                <tr key={idx}>
-                                    <td>{item.nome}</td>
-                                    <td>{item.quantidade}x</td>
-                                    <td>R$ {item.preco.toFixed(2)}</td>
-                                    <td><strong>R$ {(item.preco * item.quantidade).toFixed(2)}</strong></td>
+                            {itensPedido.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} style={{ padding: '20px', textAlign: 'center', color: '#999', fontStyle: 'italic' }}>Nenhum item inserido no rascunho.</td>
                                 </tr>
-                            ))}
+                            ) : (
+                                itensPedido.map((item, idx) => (
+                                    <tr key={idx} style={{ borderBottom: '1px solid #fff5f5' }}>
+                                        <td style={{ padding: '12px' }}>
+                                            <strong>{item.nome}</strong>
+                                            {item.observacao && <span style={{ display: 'block', fontSize: '12px', color: '#888', fontStyle: 'italic' }}>({item.observacao})</span>}
+                                        </td>
+                                        <td style={{ padding: '12px' }}>{item.quantidade}x</td>
+                                        <td style={{ padding: '12px' }}>R$ {item.preco.toFixed(2)}</td>
+                                        <td style={{ padding: '12px' }}><strong>R$ {(item.preco * item.quantidade).toFixed(2)}</strong></td>
+                                        <td style={{ padding: '12px', textAlign: 'center' }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => removerItemRascunho(idx)}
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    color: '#c93b3b',
+                                                    cursor: 'pointer',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    padding: '5px'
+                                                }}
+                                            >
+                                                <BiTrash size={18} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                             </tbody>
                         </table>
                     </div>
@@ -191,11 +233,37 @@ export const NovoPedido = () => {
                         <h3>Valor Total: R$ {calcularTotal().toFixed(2)}</h3>
                     </div>
 
-                    <div style={{ textAlign: 'center', marginTop: '40px' }}>
-                        <button className="btn-padrao" style={{ padding: '15px 50px', fontSize: '16px' }} onClick={abrirFinalizacao}>
+                    {/* 🔥 BOTÕES INFERIORES: Adicionado o botão de Cancelar ao lado do de prosseguir */}
+                    <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '40px' }}>
+                        <button
+                            type="button"
+                            className="btn-padrao"
+                            onClick={() => navigate('/pedidos')}
+                            style={{
+                                backgroundColor: '#600000', // Fundo transparente
+                                color: '#fff8e6',               // Texto Vinho
+                                border: '2px solid #600000',    // Borda Vinho
+                                borderRadius: '10px',
+                                padding: '15px 40px',
+                                fontSize: '16px',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                fontFamily: "'Georgia', serif",
+                                marginBottom: 0
+                            }}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            className="btn-padrao"
+                            onClick={abrirFinalizacao}
+                            style={{ padding: '15px 40px', fontSize: '16px', borderRadius: '10px', fontWeight: 'bold', fontFamily: "'Georgia', serif", marginBottom: 0 }}
+                        >
                             Prosseguir para o Fechamento
                         </button>
                     </div>
+
                 </div>
             </div>
 

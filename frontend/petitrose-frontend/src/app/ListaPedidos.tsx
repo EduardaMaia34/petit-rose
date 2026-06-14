@@ -36,7 +36,6 @@ export const ListaPedidos = () => {
     const carregarPedidos = async () => {
         try {
             setCarregando(true);
-            // 🔥 URL Corrigida para bater com o novo endpoint do backend (/pedidos)
             const response = await api.get('/pedidos');
 
             if (Array.isArray(response.data)) {
@@ -67,7 +66,6 @@ export const ListaPedidos = () => {
 
     const alterarStatus = async (id: string, pedidoOriginal: any, statusTexto: string) => {
         try {
-            // 🔥 URL Corrigida para /pedidos/{id}
             await api.put(`/pedidos/${id}`, {
                 ...pedidoOriginal,
                 status: statusTexto
@@ -93,7 +91,6 @@ export const ListaPedidos = () => {
             try {
                 const pedidoAlvo = pedidos.find(p => p.id === id);
                 if (pedidoAlvo) {
-                    // 🔥 Atualizado para mandar o PUT correto com enum CANCELADO para /pedidos/{id}
                     await api.put(`/pedidos/${id}`, {
                         ...pedidoAlvo,
                         status: 'CANCELADO'
@@ -107,9 +104,18 @@ export const ListaPedidos = () => {
         }
     };
 
+    // 🔥 FILTRO E ORDENAÇÃO ATUALIZADOS: Pedidos não finalizados (Pendente, Preparando, Pronto) ficam no topo!
     const pedidosProcessados = pedidos
         .filter(p => filtroStatus === 'TODOS' || p.status === filtroStatus)
-        .sort((a, b) => (a.status === 'CONCLUIDO' ? 1 : b.status === 'CONCLUIDO' ? -1 : 0));
+        .sort((a, b) => {
+            const ativos = ['PENDENTE', 'PREPARANDO', 'PRONTO'];
+            const aAtivo = ativos.includes(a.status);
+            const bAtivo = ativos.includes(b.status);
+
+            if (aAtivo && !bAtivo) return -1;  // 'a' vai para cima
+            if (!aAtivo && bAtivo) return 1;   // 'b' vai para cima
+            return 0;                          // Mantém a ordem padrão cronológica se forem do mesmo grupo
+        });
 
     return (
         <div className="dashboard-page">
@@ -132,6 +138,7 @@ export const ListaPedidos = () => {
                                 <option value="CANCELADO">Cancelados</option>
                             </select>
                         </div>
+                        {/* 🔥 AGORA NAVEGA PARA A TELA DE NOVO PEDIDO CHEIA */}
                         <button className="btn-novo" onClick={() => navigate('/pedidos/novo')} style={{ marginTop: '16px' }}>+ Novo Pedido</button>
                     </div>
                 </div>
@@ -148,12 +155,11 @@ export const ListaPedidos = () => {
             </div>
 
             {isModalEdicaoAberto && pedidoSelecionadoParaEditar && (
-                <div className="modal-backdrop" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}>
-                    <div className="modal-content-wrapper" style={{ backgroundColor: '#fff8e6', padding: '25px', borderRadius: '8px', maxWidth: '700px', width: '100%', maxHeight: '90vh', overflowY: 'auto', position: 'relative', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '2px solid #fbbfc5' }}>
-                        <button onClick={fecharModalEdicao} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#600000' }}>&times;</button>
-                        <EditarPedido idPedidoModal={pedidoSelecionadoParaEditar.id} onClose={fecharModalEdicao} />
-                    </div>
-                </div>
+                <EditarPedido
+                    idPedidoModal={pedidoSelecionadoParaEditar.id}
+                    onClose={fecharModalEdicao}
+                    onSucesso={fecharModalEdicao}
+                />
             )}
         </div>
     );

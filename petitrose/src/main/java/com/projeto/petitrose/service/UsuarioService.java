@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.projeto.petitrose.dto.UsuarioResponseDTO;
@@ -17,9 +18,12 @@ import com.projeto.petitrose.repositories.UsuarioRepository;
 
 @Service
 public class UsuarioService implements UserDetailsService {
-    
+
     @Autowired
     private UsuarioRepository repository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public UserDetails loadUserByUsername(String user) throws UsernameNotFoundException {
@@ -32,14 +36,14 @@ public class UsuarioService implements UserDetailsService {
 
     public List<UsuarioResponseDTO> listarTodos(){
         return repository.findAll()
-        .stream()
-        .map(UsuarioResponseDTO::new)
-        .collect(Collectors.toList());
+                .stream()
+                .map(UsuarioResponseDTO::new)
+                .collect(Collectors.toList());
     }
 
     public UsuarioResponseDTO buscarPorId(UUID id){
         Usuario usuario = repository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
         return new UsuarioResponseDTO(usuario);
     }
 
@@ -50,10 +54,9 @@ public class UsuarioService implements UserDetailsService {
         if (dados.nome() != null) {
             usuario.setNome(dados.nome());
         }
-        
+
         if (dados.user() != null) {
             Usuario usuarioExistente = repository.findByUser(dados.user());
-            // CORRIGIDO: Agora checa se o ID cadastrado é diferente do ID que está sendo editado
             if (usuarioExistente != null && !usuario.getId().equals(usuarioExistente.getId())) {
                 throw new RuntimeException("Este nome de usuário já está em uso.");
             }
@@ -62,6 +65,11 @@ public class UsuarioService implements UserDetailsService {
 
         if (dados.gerente() != null) {
             usuario.setGerente(dados.gerente());
+        }
+
+        // 🔥 Agora compila perfeitamente porque injetamos o passwordEncoder acima!
+        if (dados.senha() != null && !dados.senha().trim().isEmpty()) {
+            usuario.setSenha(passwordEncoder.encode(dados.senha()));
         }
 
         Usuario usuarioAtualizado = repository.save(usuario);

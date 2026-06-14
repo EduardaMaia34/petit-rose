@@ -1,4 +1,4 @@
-import  { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 import { api } from './api';
 import { Navbar } from './Navbar';
@@ -6,6 +6,7 @@ import { CardProduto } from './CardProduto';
 import { CadastroProduto } from './CadastroProduto';
 import { EditarProduto } from './EditarProduto';
 import '../index.css';
+import { BiPlusCircle, BiFilterAlt } from 'react-icons/bi';
 
 interface Categoria {
     id: string;
@@ -25,6 +26,7 @@ export const ListaProdutos = () => {
     const [produtos, setProdutos] = useState<Produto[]>([]);
     const [categorias, setCategorias] = useState<Categoria[]>([]);
     const [categoriaFiltro, setCategoriaFiltro] = useState<string>('TODOS');
+    const [carregando, setCarregando] = useState<boolean>(true);
 
     const [cadastroAberto, setCadastroAberto] = useState(false);
     const [editarAberto, setEditarAberto] = useState(false);
@@ -32,6 +34,7 @@ export const ListaProdutos = () => {
 
     const carregarDadosTela = async () => {
         try {
+            setCarregando(true);
             const [responseProdutos, responseCategorias] = await Promise.all([
                 api.get('/produtos'),
                 api.get('/categorias')
@@ -39,7 +42,10 @@ export const ListaProdutos = () => {
             setProdutos(responseProdutos.data);
             setCategorias(responseCategorias.data);
         } catch (error) {
+            console.error(error);
             Swal.fire('Erro', 'Não foi possível carregar os dados do cardápio.', 'error');
+        } finally {
+            setCarregando(false);
         }
     };
 
@@ -53,8 +59,8 @@ export const ListaProdutos = () => {
             text: `Desejas eliminar definitivamente o produto: ${nome}?`,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
+            confirmButtonColor: '#600000',
+            cancelButtonColor: '#fbbfc5',
             confirmButtonText: 'Sim, eliminar!',
             cancelButtonText: 'Cancelar'
         }).then(async (result) => {
@@ -75,12 +81,10 @@ export const ListaProdutos = () => {
         setEditarAberto(true);
     };
 
-    // 1. Aplica o filtro do select (se houver)
     const produtosFiltradosBase = categoriaFiltro === 'TODOS'
         ? produtos
         : produtos.filter(prod => prod.categoria?.id === categoriaFiltro);
 
-    // 2. Filtra as categorias que possuem produtos correspondentes para não exibir títulos vazios
     const categoriasVisiveis = categoriaFiltro === 'TODOS'
         ? categorias
         : categorias.filter(cat => cat.id === categoriaFiltro);
@@ -92,9 +96,12 @@ export const ListaProdutos = () => {
             <div className="main-container">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' }}>
                     <div>
-                        <h2 style={{ margin: 0, color: 'var(--vinho-texto)', fontSize:'28px' }}>Gerenciamento de Produtos</h2>
+                        <h2 style={{ margin: 0, color: 'var(--vinho-texto)', fontSize: '28px', fontFamily: "'Georgia', serif" }}>
+                            Gerenciamento de Produtos
+                        </h2>
 
                         <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <BiFilterAlt color="var(--vinho-texto)" />
                             <span style={{ color: 'var(--vinho-texto)', fontWeight: 'bold', fontSize: '15px' }}>Filtrar por:</span>
                             <select
                                 value={categoriaFiltro}
@@ -120,62 +127,77 @@ export const ListaProdutos = () => {
                         </div>
                     </div>
 
-                    <button className="btn-novo" onClick={() => setCadastroAberto(true)}>
-                        + Novo Produto
+                    <button
+                        className="btn-novo"
+                        onClick={() => setCadastroAberto(true)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', border: 'none', cursor: 'pointer' }}
+                    >
+                        <BiPlusCircle size={20} /> Novo Produto
                     </button>
                 </div>
 
-                {produtosFiltradosBase.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '40px', color: 'var(--vinho-texto)', fontStyle: 'italic' }}>
-                        Nenhum produto encontrado.
-                    </div>
+                {carregando ? (
+                    <p style={{ textAlign: 'center', color: 'var(--vinho-texto)', padding: '40px', fontWeight: 'bold' }}>
+                        Carregando os doces da Petit Rose...
+                    </p>
+                ) : produtosFiltradosBase.length === 0 ? (
+                    <p style={{ textAlign: 'center', color: '#888', padding: '40px', fontStyle: 'italic' }}>
+                        Nenhum produto encontrado para esta seleção.
+                    </p>
                 ) : (
-                    // Mapeia os blocos de categoria criando as divisórias visuais
-                    categoriasVisiveis.map((categoria) => {
-                        const produtosDaCategoria = produtosFiltradosBase.filter(
-                            (prod) => prod.categoria?.id === categoria.id
-                        );
+                    <div>
+                        {categoriasVisiveis.map((categoria) => {
+                            const produtosDaCategoria = produtosFiltradosBase.filter(
+                                (prod) => prod.categoria?.id === categoria.id
+                            );
 
-                        if (produtosDaCategoria.length === 0) return null;
+                            if (produtosDaCategoria.length === 0) return null;
 
-                        return (
-                            <div key={categoria.id} style={{ marginBottom: '40px' }}>
-                                <h3 style={{
-                                    color: 'var(--vinho-texto)',
-                                    borderBottom: '2px solid var(--rosa-escuro)',
-                                    paddingBottom: '8px',
-                                    marginBottom: '20px',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '1px'
-                                }}>
-                                    {categoria.nome}
-                                </h3>
+                            return (
+                                <div key={categoria.id} style={{ marginBottom: '40px' }}>
+                                    <h3 style={{
+                                        color: 'var(--vinho-texto)',
+                                        fontFamily: 'inherit',
+                                        fontWeight: 'bold',
+                                        letterSpacing: '0.5px',
+                                        borderBottom: '2px solid #fbbfc5',
+                                        paddingBottom: '8px',
+                                        marginBottom: '20px',
+                                        fontSize: '20px'
+                                    }}>
+                                        {categoria.nome}
+                                    </h3>
+                                    <div className="pedidos-grid">
+                                        {produtosDaCategoria.map((prod) => (
+                                            <CardProduto
+                                                key={prod.id}
+                                                produto={prod}
+                                                onEditarClick={handleIniciarEdicao}
+                                                onDeletarClick={handleDeletar}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
+
+                        {categoriaFiltro === 'TODOS' && produtos.some(p => !p.categoria) && (
+                            <div style={{ marginBottom: '40px' }}>
+                                <h3 style={{ color: 'var(--vinho-texto)', borderBottom: '2px solid #fbbfc5', paddingBottom: '8px', marginBottom: '20px', fontFamily: 'inherit', fontWeight: 'bold', fontSize: '20px' }}>
+                                    Sem Categoria Relacionada
+                                </h3 >
                                 <div className="pedidos-grid">
-                                    {produtosDaCategoria.map((prod) => (
+                                    {produtos.filter(p => !p.categoria).map((prod) => (
                                         <CardProduto
                                             key={prod.id}
                                             produto={prod}
-                                            onEditar={handleIniciarEdicao}
-                                            onDeletar={handleDeletar}
+                                            onEditarClick={handleIniciarEdicao}
+                                            onDeletarClick={handleDeletar}
                                         />
                                     ))}
                                 </div>
                             </div>
-                        );
-                    })
-                )}
-
-                {/* Fallback para produtos sem categoria definida no back-end */}
-                {categoriaFiltro === 'TODOS' && produtos.some(p => !p.categoria) && (
-                    <div style={{ marginBottom: '40px' }}>
-                        <h3 style={{ color: 'var(--vinho-texto)', borderBottom: '2px solid var(--rosa-escuro)', paddingBottom: '8px', marginBottom: '20px' }}>
-                            Sem Categoria Relacionada
-                        </h3>
-                        <div className="pedidos-grid">
-                            {produtos.filter(p => !p.categoria).map((prod) => (
-                                <CardProduto key={prod.id} produto={prod} onEditar={handleIniciarEdicao} onDeletar={handleDeletar} />
-                            ))}
-                        </div>
+                        )}
                     </div>
                 )}
             </div>

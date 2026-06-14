@@ -1,4 +1,5 @@
 import React from 'react';
+import { BiEdit, BiTrash } from 'react-icons/bi';
 
 interface Produto {
     id: string;
@@ -10,17 +11,15 @@ interface Produto {
 
 interface CardProdutoProps {
     produto: Produto;
-    onEditar?: (id: string) => void;   // Opcional para poder reutilizar na tela do cliente
-    onDeletar?: (id: string, nome: string) => void; // Opcional para poder reutilizar na tela do cliente
+    onEditarClick?: (id: string) => void;
+    onDeletarClick?: (id: string, nome: string) => void;
 }
 
-export const CardProduto: React.FC<CardProdutoProps> = ({ produto, onEditar, onDeletar }) => {
-    // Imagem alternativa padrão caso o produto não possua foto
+export const CardProduto: React.FC<CardProdutoProps> = ({ produto, onEditarClick, onDeletarClick }) => {
     const imagemPlaceholder = "https://placehold.co/400x400/fbbfc5/600000?text=Petit+Rose";
 
     return (
-        <div className="pedido-card" style={{ padding: '25px' }}>
-            {/* Renderização da imagem baseada na URL estática do seu WebConfig */}
+        <div className="pedido-card" style={{ padding: '25px', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box' }}>
             <img
                 src={produto.imagemUrl ? `http://localhost:8081/uploads/${produto.imagemUrl}` : imagemPlaceholder}
                 alt={produto.nome}
@@ -31,7 +30,7 @@ export const CardProduto: React.FC<CardProdutoProps> = ({ produto, onEditar, onD
                 {produto.nome}
             </h3>
 
-            <p style={{ fontSize: '14px', color: '#8b0000', fontStyle: 'italic', minHeight: '40px', margin: '5px 0 15px 0' }}>
+            <p style={{ fontSize: '14px', color: '#8b0000', fontStyle: 'italic', minHeight: '40px', margin: '5px 0 15px 0', flexGrow: 1 }}>
                 {produto.descricao || "Sem descrição cadastrada."}
             </p>
 
@@ -39,25 +38,24 @@ export const CardProduto: React.FC<CardProdutoProps> = ({ produto, onEditar, onD
                 R$ {produto.valor.toFixed(2).replace('.', ',')}
             </div>
 
-            {/* Renderiza a área de botões apenas se as funções de gerenciamento forem fornecidas */}
-            {(onEditar || onDeletar) && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
-                    {onEditar && (
+            {(onEditarClick || onDeletarClick) && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', marginTop: 'auto' }}>
+                    {onEditarClick && (
                         <button
                             className="status-btn-em-preparo"
-                            style={{ flex: 1, textAlign: 'center', backgroundColor: '#fbbfc5', color: '#600000' }}
-                            onClick={() => onEditar(produto.id)}
+                            style={{ flex: 1, textAlign: 'center', backgroundColor: '#fbbfc5', color: '#600000', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontWeight: 'bold', height: '38px', cursor: 'pointer', border: 'none', borderRadius: '10px' }}
+                            onClick={() => onEditarClick(produto.id)}
                         >
-                            Editar
+                            <BiEdit size={16} /> Editar
                         </button>
                     )}
-                    {onDeletar && (
+                    {onDeletarClick && (
                         <button
                             className="status-btn-pagamento"
-                            style={{ flex: 1, textAlign: 'center' }}
-                            onClick={() => onDeletar(produto.id, produto.nome)}
+                            style={{ flex: 1, textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontWeight: 'bold', height: '38px', cursor: 'pointer', border: 'none', borderRadius: '10px' }}
+                            onClick={() => onDeletarClick(produto.id, produto.nome)}
                         >
-                            Deletar
+                            <BiTrash size={16} /> Deletar
                         </button>
                     )}
                 </div>

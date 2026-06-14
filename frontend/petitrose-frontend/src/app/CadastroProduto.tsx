@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 import { api } from './api';
+import { BiPlusCircle, BiCheck, BiX, BiUpload, BiTrash } from 'react-icons/bi';
 import '../index.css';
 
 interface Categoria {
@@ -23,7 +24,6 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
     const [imagem, setImagem] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-    // Carrega as categorias do banco quando o modal abre
     useEffect(() => {
         if (isOpen) {
             const carregarCategorias = async () => {
@@ -56,14 +56,13 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
         setPreviewUrl(null);
     };
 
-    // FUNÇÃO DE LIMPEZA CRÍTICA: Reseta os estados e fecha o modal de forma limpa
     const handleFecharModal = () => {
         setNome('');
         setValor('');
         setDescricao('');
         setImagem(null);
         setPreviewUrl(null);
-        onClose(); // Propaga o fechamento para o componente pai
+        onClose();
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -95,8 +94,6 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
             });
 
             Swal.fire('Sucesso!', 'Produto cadastrado com sucesso!', 'success');
-
-            // Notifica a listagem para recarregar e fecha limpando tudo
             onSucesso();
             handleFecharModal();
         } catch (error) {
@@ -107,7 +104,10 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
     return (
         <div style={modalOverlayStyle}>
             <div className="form-produto-container" style={{ ...modalContainerStyle, maxHeight: '90vh', overflowY: 'auto' }}>
-                <h2>Novo Produto</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                    <BiPlusCircle size={28} color="var(--vinho-texto)" />
+                    <h2 style={{ margin: 0, fontFamily: "Georgia, serif", color: 'var(--vinho-texto)' }}>Novo Produto</h2>
+                </div>
 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group" style={{ marginBottom: '15px' }}>
@@ -139,8 +139,8 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
                     <div className="form-group" style={{ marginBottom: '15px' }}>
                         <label>Imagem do Produto</label>
                         {!previewUrl ? (
-                            <label style={{ ...btnUploadRosaStyle, display: 'block', padding: '12px', textAlign: 'center', borderRadius: 'var(--radius-p)', cursor: 'pointer', fontWeight: 'bold' }}>
-                                📷 Selecionar Imagem
+                            <label style={{ ...btnUploadRosaStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', textAlign: 'center', borderRadius: 'var(--radius-p)', cursor: 'pointer', fontWeight: 'bold' }}>
+                                <BiUpload size={20} /> Selecionar Imagem
                                 <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
                             </label>
                         ) : (
@@ -149,9 +149,9 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
                                 <button
                                     type="button"
                                     onClick={handleRemoverImagem}
-                                    style={{ ...btnAcaoImagemStyle, backgroundColor: 'var(--vinho-texto)', width: '120px' }}
+                                    style={{ ...btnAcaoImagemStyle, backgroundColor: 'var(--vinho-texto)', width: '140px', gap: '5px' }}
                                 >
-                                    Remover Foto
+                                    <BiTrash size={18} /> Remover Foto
                                 </button>
                             </div>
                         )}
@@ -163,17 +163,15 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
                     </div>
 
                     <div style={{ display: 'flex', gap: '15px', marginTop: '25px' }}>
-                        {/* Modificado para disparar o handleFecharModal e limpar o estado da foto */}
                         <button
                             type="button"
                             onClick={handleFecharModal}
-                            className="btn-voltar"
-                            style={{ flex: 1, backgroundColor: 'var(--vinho-texto)', color: '#fff', margin: 0, padding: '12px' }}
+                            style={{ flex: 1, backgroundColor: '#600000', color: '#fff8e6', margin: 0, padding: '12px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px', fontFamily: "Georgia, serif" }}
                         >
-                            Cancelar
+                            <BiX size={20} /> Cancelar
                         </button>
-                        <button type="submit" className="btn-padrao" style={{ flex: 1, margin: 0, padding: '12px' }}>
-                            Confirmar
+                        <button type="submit" className="btn-padrao" style={{ flex: 1, margin: 0, padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <BiCheck size={20} /> Confirmar
                         </button>
                     </div>
                 </form>
@@ -183,15 +181,14 @@ export const CadastroProduto: React.FC<CadastroProdutoProps> = ({ isOpen, onClos
 };
 
 /* ESTILOS INTERNOS */
-
 const modalOverlayStyle: React.CSSProperties = {
     position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)', display: 'flex', justifyContent: 'center',
-    alignItems: 'center', zIndex: 2000, padding: '20px', boxSizing: 'border-box'
+    backgroundColor: 'rgba(113, 1, 0, 0.25)', backdropFilter: 'blur(5px)',
+    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000, padding: '20px', boxSizing: 'border-box'
 };
 
 const modalContainerStyle: React.CSSProperties = {
-    margin: 0, width: '100%', maxWidth: '550px', boxShadow: '0 8px 30px rgba(0,0,0,0.2)'
+    margin: 0, width: '100%', maxWidth: '550px', boxShadow: '0 8px 30px rgba(0,0,0,0.2)', backgroundColor: '#fff', padding: '30px', borderRadius: '15px'
 };
 
 const btnUploadRosaStyle: React.CSSProperties = {
@@ -199,35 +196,13 @@ const btnUploadRosaStyle: React.CSSProperties = {
 };
 
 const btnAcaoImagemStyle: React.CSSProperties = {
-    display: 'inline-flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    color: '#fff',
-    padding: '6px 12px',
-    borderRadius: 'var(--radius-p)',
-    textAlign: 'center',
-    cursor: 'pointer',
-    fontWeight: 'bold',
-    fontSize: '13px',
-    border: 'none',
-    height: '34px',
-    boxSizing: 'border-box'
+    display: 'inline-flex', justifyContent: 'center', alignItems: 'center', color: '#fff', padding: '6px 12px', borderRadius: 'var(--radius-p)', textAlign: 'center', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', border: 'none', height: '38px', boxSizing: 'border-box'
 };
 
 const containerFotoPequenaStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '15px',
-    border: '1px solid var(--rosa-escuro)',
-    padding: '10px',
-    borderRadius: 'var(--radius-p)',
-    backgroundColor: '#fff'
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '15px', border: '1px solid var(--rosa-escuro)', padding: '10px', borderRadius: 'var(--radius-p)', backgroundColor: '#fff'
 };
 
 const imgCardStyle: React.CSSProperties = {
-    width: '100px',
-    height: '80px',
-    objectFit: 'cover',
-    borderRadius: '6px'
+    width: '100px', height: '80px', objectFit: 'cover', borderRadius: '6px'
 };

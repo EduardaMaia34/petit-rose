@@ -1,5 +1,5 @@
 // src/App.tsx
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './app/Login';
 import { Cadastro } from './app/Cadastrar';
 import { MenuCliente } from './app/MenuCliente';
@@ -16,8 +16,26 @@ import { GerenciamentoMesas } from './app/GerenciamentoMesas';
 import { ListaPedidos } from './app/ListaPedidos';
 import { NovoPedido } from './app/NovoPedido';
 import {EditarPedido} from "./app/EditarPedido.tsx";
+import { ListaUsuarios } from './app/ListaUsuarios';
 
 import './index.css';
+
+interface RotaProtegidaProps {
+    children: React.JSX.Element;
+}
+
+const RotaAdminProtegida: React.FC<RotaProtegidaProps> = ({ children }) => {
+    const token = localStorage.getItem('token');
+
+    // Se não tiver token nenhum, manda para o login
+    if (!token) {
+        return <Navigate to="/login" replace />;
+    }
+
+    return children;
+};
+
+
 
 function App() {
     return (
@@ -49,11 +67,20 @@ function App() {
                 <Route path="/pedidos/novo" element={<NovoPedido />} />
                 <Route path="/pedidos/editar/:id" element={<EditarPedido />} />
 
-                {/* Rota de Fallback (Redireciona qualquer URL inválida para o Login) */}
+                <Route
+                    path="/usuarios"
+                    element={
+                        <RotaAdminProtegida>
+                            <ListaUsuarios />
+                        </RotaAdminProtegida>
+                    } />
+
                 <Route path="*" element={<Login />} />
             </Routes>
         </Router>
     );
 }
+
+
 
 export default App;
