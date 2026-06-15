@@ -49,7 +49,7 @@ export const Navbar: React.FC<NavbarProps> = ({ abaAtiva }) => {
             />
             <div className="navbar-menu" style={{ display: 'flex', alignItems: 'center' }}>
                 <button
-                    onClick={() => navigate(eAdmin ? '/menu-admin' : '/menu-cliente')}
+                    onClick={() => navigate(eAdmin ? '/menu-admin' : '/menu-funcionario')}
                     className={`nav-btn ${abaAtiva === 'inicio' ? 'ativo' : ''}`}
                 >
                     Início

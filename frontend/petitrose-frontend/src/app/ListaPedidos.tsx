@@ -138,8 +138,6 @@ export const ListaPedidos = () => {
                                 <option value="CANCELADO">Cancelados</option>
                             </select>
                         </div>
-                        {/* 🔥 AGORA NAVEGA PARA A TELA DE NOVO PEDIDO CHEIA */}
-                        <button className="btn-novo" onClick={() => navigate('/pedidos/novo')} style={{ marginTop: '16px' }}>+ Novo Pedido</button>
                     </div>
                 </div>
 

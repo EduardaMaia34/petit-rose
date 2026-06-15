@@ -255,40 +255,75 @@ export const GerenciamentoMesas = () => {
         }
     };
 
+    // Substitua ou atualize a função handleFecharComandaUnica por esta versão:
     const handleFecharComandaUnica = async () => {
-        if (!comandaAtivaId || !mesaSelecionada) return;
-
-        const comandaAlvo = mesaSelecionada.comandas.find(c => c.id === comandaAtivaId)!;
-
-        if (!comandaAlvo.valorTotalComanda || comandaAlvo.valorTotalComanda <= 0) {
-            Swal.fire('Atenção', 'Esta comanda não possui nenhum consumo registrado.', 'warning');
-            return;
-        }
-
-        const { value: formaPagamento } = await Swal.fire({
-            title: `Fechar ${comandaAlvo.codigoIdentificador}`,
-            html: `Total acumulado: <strong>R$ ${comandaAlvo.valorTotalComanda.toFixed(2).replace('.', ',')}</strong>`,
-            input: 'select',
-            inputOptions: { 'PIX': 'Pix', 'DINHEIRO': 'Dinheiro', 'CARTAO_CREDITO': 'Crédito', 'CARTAO_DEBITO': 'Débito' },
-            inputPlaceholder: 'Forma de pagamento',
-            showCancelButton: true,
-            confirmButtonText: 'Confirmar Pagamento',
-            confirmButtonColor: '#710100'
-        });
-
-        if (!formaPagamento) return;
+        if (!comandaAtivaId) return;
 
         try {
+            // 1. Buscar os detalhes completos da comanda e seus pedidos reais do backend antes de fechar
+            const responseComandaCompleta = await api.get(`/pedidos`);
+            // Filtra os pedidos que pertencem a esta comanda ativa e que não estão concluídos ou cancelados
+            const pedidosPendentes = responseComandaCompleta.data.filter((pedido: any) =>
+                pedido.comanda?.id === comandaAtivaId &&
+                pedido.status !== 'CONCLUIDO' &&
+                pedido.status !== 'CANCELADO'
+            );
+
+            // 2. Se houver qualquer pedido que não foi finalizado/entregue, bloqueia o fechamento
+            if (pedidosPendentes.length > 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Não é possível fechar a conta!',
+                    html: `Esta mesa possui <strong>${pedidosPendentes.length} pedido(s)</strong> ainda em preparo ou pendentes de entrega na cozinha.<br><br><small>Por favor, conclua ou cancele os pedidos na tela de Produção antes de liberar o faturamento da mesa.</small>`,
+                    confirmButtonColor: '#710100'
+                });
+                return;
+            }
+
+            // 3. Caso todos estejam CONCLUÍDOS, segue o fluxo normal de seleção do método e fechamento
+            const { value: metodo } = await Swal.fire({
+                title: 'Selecione a Forma de Pagamento',
+                input: 'select',
+                inputOptions: {
+                    'PIX': 'Pix',
+                    'DINHEIRO': 'Dinheiro',
+                    'CARTAO_CREDITO': 'Cartão de Crédito',
+                    'CARTAO_DEBITO': 'Cartão de Débito'
+                },
+                inputPlaceholder: 'Escolha o método...',
+                showCancelButton: true,
+                confirmButtonColor: '#710100',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Finalizar e Liquidar',
+                cancelButtonText: 'Voltar'
+            });
+
+            if (!metodo) return;
+
             setLoading(true);
-            await api.put(`/comandas/${comandaAtivaId}/fechar?metodoPagamento=${formaPagamento}`);
+            // Enviando com o RequestParam corrigido que causava o erro anterior
+            await api.put(`/comandas/${comandaAtivaId}/fechar?metodoPagamento=${metodo}`);
 
-            fecharModalLimpo();
-            await inicializarSalao();
+            Swal.fire({
+                icon: 'success',
+                title: 'Conta Fechada!',
+                text: 'Mesa desocupada e faturamento registrado no Caixa.',
+                confirmButtonColor: '#710100'
+            });
 
-            Swal.fire({ icon: 'success', title: 'Mesa Liberada!', text: 'A comanda foi finalizada e o fluxo de caixa atualizado.', confirmButtonColor: '#710100' });
+            setIsModalAberto(false);
+            setMesaSelecionada(null);
+            setComandaAtivaId(null);
+            inicializarSalao(); // Atualiza o grid de mesas do salão
+
         } catch (error) {
             console.error(error);
-            Swal.fire('Erro', 'Não foi possível fechar a comanda.', 'error');
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro ao fechar conta',
+                text: 'Não foi possível processar a liquidação desta comanda.',
+                confirmButtonColor: '#710100'
+            });
         } finally {
             setLoading(false);
         }

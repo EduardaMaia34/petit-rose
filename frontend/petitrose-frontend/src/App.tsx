@@ -2,7 +2,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from './app/Login';
 import { Cadastro } from './app/Cadastrar';
-import { MenuCliente } from './app/MenuCliente';
+import { MenuFuncionario } from './app/MenuFuncionario.tsx';
 import { MenuAdmin } from './app/MenuAdmin';
 import { ListaProdutos } from './app/ListaProdutos';
 import { CadastroProduto } from './app/CadastroProduto';
@@ -26,8 +26,6 @@ interface RotaProtegidaProps {
 
 const RotaAdminProtegida: React.FC<RotaProtegidaProps> = ({ children }) => {
     const token = localStorage.getItem('token');
-
-    // Se não tiver token nenhum, manda para o login
     if (!token) {
         return <Navigate to="/login" replace />;
     }
@@ -47,7 +45,7 @@ function App() {
                 <Route path="/cadastrar" element={<Cadastro />} />
 
                 {/* Painéis Principais (Dashboards) */}
-                <Route path="/menu-cliente" element={<MenuCliente />} />
+                <Route path="/menu-funcionario" element={<MenuFuncionario />} />
                 <Route path="/menu-admin" element={<MenuAdmin />} />
 
                 <Route path="/produtos" element={<ListaProdutos />} />

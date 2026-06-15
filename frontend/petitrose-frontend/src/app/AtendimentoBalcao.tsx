@@ -123,7 +123,7 @@ export const AtendimentoBalcao = () => {
             setCarregando(true);
 
             // Abre uma comanda rápida fictícia de balcão (Mesa 99)
-            const responseComanda = await api.post('/api/comandas', { numeroMesa: 99 });
+            const responseComanda = await api.post('/comandas', { numeroMesa: 99 });
             const comandaId = responseComanda.data.id;
 
             // Envia o payload no DTO exato mapeado no PedidoController
@@ -131,7 +131,7 @@ export const AtendimentoBalcao = () => {
                 itens: carrinho.map(item => ({
                     produtoId: item.id,
                     quantidade: item.quantidade,
-                    observacao: `Balcão — Método: ${metodoPagamento}`
+                    observacao: `Atendimento ao Balcão (${metodoPagamento})`
                 }))
             };
 
@@ -139,11 +139,11 @@ export const AtendimentoBalcao = () => {
             await api.post(`/pedidos/comanda/${comandaId}`, pedidoDTO);
 
             // Liquida a comanda fechando o caixa e salvando nos relatórios
-            await api.put(`/api/comandas/${comandaId}/fechar`);
+            await api.put(`/comandas/${comandaId}/fechar?metodoPagamento=${metodoPagamento}`);
 
             Swal.fire({
                 icon: 'success',
-                title: 'Venda Concluída! 🎉',
+                title: 'Venda Concluída!',
                 text: 'O pedido foi faturado e salvo no fluxo de caixa.',
                 confirmButtonColor: '#710100'
             });

@@ -170,8 +170,8 @@ export const EditarPedido: React.FC<EditarPedidoProps> = ({ idPedidoModal, onClo
                             <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Obs.</label>
                             <input type="text" placeholder="Observação" value={observacaoNova} onChange={(e) => setObservacaoNova(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #fbbfc5' }} />
                         </div>
-                        <button type="button" onClick={adicionarItemEdicao} style={{ backgroundColor: '#710100', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
-                            + Incluir
+                        <button type="button" onClick={adicionarItemEdicao} style={{ backgroundColor: '#710100', color: '#fff', border: 'none', padding: '10px 10px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                            +
                         </button>
                     </div>
                 </div>

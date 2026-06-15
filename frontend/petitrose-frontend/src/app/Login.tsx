@@ -6,7 +6,6 @@ import '../index.css';
 import logoPetitRose from '../assets/Logo.png';
 
 export const Login = () => {
-    // 1. Estados declarados de forma única
     const [user, setUser] = useState('');
     const [senha, setSenha] = useState('');
     const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -16,7 +15,6 @@ export const Login = () => {
         e.preventDefault();
 
         try {
-            // 2. Requisição limpa enviando 'user' para o backend
             const response = await axios.post('http://localhost:8081/usuarios/login', {
                 user: user,
                 senha: senha
@@ -24,8 +22,12 @@ export const Login = () => {
 
             if (response.status === 200) {
                 const token = response.data.token;
+                // Verifique se o seu backend envia o campo gerente ou leia direto do nome digitado
+                const ehGerente = response.data.gerente || user.toLowerCase() === 'admin';
+
                 localStorage.setItem('token', token);
                 localStorage.setItem('usuario_login', user);
+                localStorage.setItem('eh_gerente', String(ehGerente));
 
                 Swal.fire({
                     title: 'Sucesso!',
@@ -33,7 +35,11 @@ export const Login = () => {
                     icon: 'success',
                     confirmButtonColor: '#600000'
                 }).then(() => {
-                    navigate('/menu-cliente');
+                    if (ehGerente) {
+                        navigate('/menu-admin');
+                    } else {
+                        navigate('/menu-funcionario');
+                    }
                 });
             }
         } catch (error: any) {
@@ -55,7 +61,6 @@ export const Login = () => {
                     </div>
                     <form className="login-form" onSubmit={handleLogin}>
 
-                        {/* Input de Usuário único */}
                         <div className="input-group">
                             <input
                                 type="text"
@@ -66,7 +71,6 @@ export const Login = () => {
                             />
                         </div>
 
-                        {/* Input de Senha com o Botão do Olho embutido */}
                         <div className="input-group">
                             <input
                                 type={mostrarSenha ? "text" : "password"}
@@ -84,7 +88,7 @@ export const Login = () => {
                             >
                                 {mostrarSenha ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#600000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7"/>
                                         <circle cx="12" cy="12" r="3"/>
                                     </svg>
                                 ) : (
