@@ -15,17 +15,23 @@ import lombok.AllArgsConstructor;
 @Entity
 @Table(name = "insumos")
 @Data
-@NoArgsConstructor 
-@AllArgsConstructor 
+@NoArgsConstructor
+@AllArgsConstructor
 public class Insumo {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO) 
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @Column(nullable = false, length = 150) 
+    @Column(nullable = false, length = 150)
     private String nome;
 
     @Column(name = "valor_unitario", nullable = false)
     private BigDecimal valorUnitario;
+
+    @Column(length = 50)
+    private String categoria;
+
+    @Column(length = 20)
+    private String unidade;
 }

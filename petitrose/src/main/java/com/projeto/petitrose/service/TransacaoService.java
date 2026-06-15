@@ -23,6 +23,7 @@ public class TransacaoService {
     @Autowired
     private TransacaoRepository transacaoRepository;
 
+    // 👑 COLOQUE ESTE MÉTODO COMPLETO NO SEU com.projeto.petitrose.service.TransacaoService
     public TransacaoResponseDTO cadastrar(TransacaoRequestDTO dto) {
         Transacao transacao = new Transacao();
         transacao.setTipo(dto.tipo());
@@ -30,6 +31,13 @@ public class TransacaoService {
         transacao.setValor(dto.valor());
         transacao.setData(dto.data() != null ? dto.data() : LocalDateTime.now());
         transacao.setMetodoPagamento(dto.metodoPagamento());
+
+        // 🔥 CORREÇÃO DA LÓGICA: Se vier do modal de despesas (Saída), assume 1. Se vier de vendas, usa a qtd enviada.
+        if (dto.quantidade() != null) {
+            transacao.setQuantidade(dto.quantidade());
+        } else {
+            transacao.setQuantidade(1);
+        }
 
         Transacao salva = transacaoRepository.save(transacao);
         return converterParaDTO(salva);

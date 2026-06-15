@@ -8,5 +8,8 @@ public record EstoqueResponseDTO(
     int quantidadeAtual,
     int capacidadeMaxima,
     float porcentagem,
-    String status
+    String status,
+    String categoria,
+    String unidade
+
 ) {}

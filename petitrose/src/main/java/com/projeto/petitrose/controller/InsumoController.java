@@ -41,10 +41,23 @@ public class InsumoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // 👑 VERSÃO CORRIGIDA EM com.projeto.petitrose.controller.InsumoController
     @PutMapping("/{id}")
-    public ResponseEntity<Insumo> editarInsumo(@PathVariable UUID id, @RequestBody Insumo insumo) {
+    public ResponseEntity<Insumo> editarInsumo(@PathVariable UUID id, @RequestBody java.util.Map<String, Object> payload) {
         try {
-            Insumo insumoEditado = insumoService.editar(id, insumo);
+            // 1. Extrai os dados textuais do Insumo do corpo da requisição
+            Insumo insumo = new Insumo();
+            insumo.setNome((String) payload.get("nome"));
+            insumo.setCategoria((String) payload.get("categoria"));
+            insumo.setUnidade((String) payload.get("unidade"));
+            insumo.setValorUnitario(new java.math.BigDecimal("0.0"));
+
+            // 2. Extrai os dados numéricos de estoque enviados pelo front-end
+            Integer quantidadeAtual = payload.get("quantidadeAtual") != null ? Integer.parseInt(payload.get("quantidadeAtual").toString()) : 0;
+            Integer capacidadeMaxima = payload.get("capacidadeMaxima") != null ? Integer.parseInt(payload.get("capacidadeMaxima").toString()) : 100;
+
+            // 3. Invoca o serviço passando os parâmetros separados de forma segura
+            Insumo insumoEditado = insumoService.editar(id, insumo, quantidadeAtual, capacidadeMaxima);
             return ResponseEntity.ok(insumoEditado);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();

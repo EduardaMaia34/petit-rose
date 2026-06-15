@@ -6,5 +6,7 @@ public record InsumoRequestDTO(
     String nome,
     BigDecimal valorUnitario,
     Integer quantidadeAtual, 
-    Integer capacidadeMaxima  
+    Integer capacidadeMaxima,
+    String categoria,
+    String unidade
 ) {}

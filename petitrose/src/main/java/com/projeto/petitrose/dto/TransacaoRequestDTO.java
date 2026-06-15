@@ -23,5 +23,6 @@ public record TransacaoRequestDTO(
         LocalDateTime data,
 
         @NotNull(message = "O método de pagamento é obrigatório")
-        MetodoPagamento metodoPagamento
+        MetodoPagamento metodoPagamento,
+        Integer quantidade
 ) {}

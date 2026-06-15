@@ -32,49 +32,49 @@ public class SecurityConfigurations {
                 // Ativa a configuração do CORS definida abaixo e desabilita o CSRF
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
-                
+
                 // Define a política de sessão como STATELESS (padrão para JWT)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                
+
                 // Configuração das regras de acesso dos Endpoints
                 .authorizeHttpRequests(authorize -> authorize
-                        // Permite requisições de pre-flight do CORS (OPTIONS)
+                        // 1. Rotas Públicas (Sem necessidade de Token)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
-
-                        // Usuário e Autenticação
                         .requestMatchers(HttpMethod.POST, "/usuarios/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/usuarios/register").permitAll()
-                        .requestMatchers("/produtos/**").permitAll()
-                        .requestMatchers("/produtos").permitAll()
 
-                        // Categorias
-                        .requestMatchers("/categorias/**").permitAll()
-                        .requestMatchers("/categorias").permitAll()
+                        // 2. Rotas do Funcionário Comum (USER) e Admin (ADMIN)
+                        // Permissão para visualizar/gerenciar Pedidos, Comandas, Catálogo e Checkout
+                        .requestMatchers("/pedidos/**", "/pedidos").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/comandas/**", "/comandas").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/catalogo/**", "/catalogo").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/checkout/**", "/checkout").hasAnyRole("USER", "ADMIN")
 
-                        // Catálogo, Checkout, Comandas e Pedidos
-                        .requestMatchers("/catalogo/**").permitAll()
-                        .requestMatchers("/catalogo").permitAll()
-                        .requestMatchers("/checkout/**").permitAll()
-                        .requestMatchers("/checkout").permitAll()
-                        .requestMatchers("/comandas/**").permitAll()
-                        .requestMatchers("/comandas").permitAll()
+                        // Permitir apenas leitura (GET) de produtos e categorias para o Funcionário montar comandas
+                        .requestMatchers(HttpMethod.GET, "/produtos/**", "/produtos").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/categorias/**", "/categorias").hasAnyRole("USER", "ADMIN")
 
-                        // Pedidos
-                        .requestMatchers("/pedidos/**").permitAll()
-                        .requestMatchers("/pedidos").permitAll()
+                        // 3. Rotas Exclusivas do Administrador/Gerente (ADMIN apenas)
+                        // Cadastrar/Editar/Deletar Produtos e Categorias
+                        .requestMatchers(HttpMethod.POST, "/produtos/**", "/produtos").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/produtos/**", "/produtos").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/produtos/**", "/produtos").hasRole("ADMIN")
 
-                        // Estoque e Insumos
-                        .requestMatchers("/insumos/**").permitAll()
-                        .requestMatchers("/insumos").permitAll()
-                        .requestMatchers("/estoque/**").permitAll()
-                        .requestMatchers("/estoque").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/categorias/**", "/categorias").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/categorias/**", "/categorias").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/categorias/**", "/categorias").hasRole("ADMIN")
 
-                        // Fluxo de Caixa / Transações
-                        .requestMatchers("/transacoes/**").permitAll()
-                        .requestMatchers("/transacoes").permitAll()
+                        // Gerenciamento, Cadastro e visualização de Usuários
+                        .requestMatchers("/usuarios/**", "/usuarios").hasRole("ADMIN")
 
-                        // Qualquer outra rota exige autenticação por Token
+                        // Relatórios, Auditoria, Fluxo de Caixa, Transações e Controle Avançado de Estoque
+                        .requestMatchers("/api/relatorios/**").hasRole("ADMIN")
+                        .requestMatchers("/relatorios/**", "/relatorios").hasRole("ADMIN")
+                        .requestMatchers("/transacoes/**", "/transacoes").hasRole("ADMIN")
+                        .requestMatchers("/insumos/**", "/insumos").hasRole("ADMIN")
+                        .requestMatchers("/estoque/**", "/estoque").hasRole("ADMIN")
+
+                        // Qualquer outra rota não mapeada exige autenticação
                         .anyRequest().authenticated()
                 )
                 // Insere o filtro customizado JWT antes do filtro de autenticação padrão do Spring
@@ -95,15 +95,11 @@ public class SecurityConfigurations {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
+
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
-        
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        
         configuration.setAllowedHeaders(List.of("*"));
-        
         configuration.setExposedHeaders(List.of("Authorization"));
-        
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

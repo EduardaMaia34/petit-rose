@@ -28,14 +28,12 @@ public class EstoqueService {
         return "Cheio";
     }
 
-    
     public List<ItemEstoqueResponseDTO> listarItensEstoque() {
         return itemEstoqueRepository.findAll().stream()
                 .map(this::converterParaDTO)
                 .collect(Collectors.toList());
     }
 
-    
     public ItemEstoqueResponseDTO editarQuantidade(UUID itemId, ItemEstoque dadosAtualizados) {
         ItemEstoque itemExistente = itemEstoqueRepository.findById(itemId)
                 .orElseThrow(() -> new RuntimeException("Item de estoque não encontrado."));
@@ -47,6 +45,7 @@ public class EstoqueService {
         return converterParaDTO(salvo);
     }
 
+    // 🔥 Método corrigido para bater com os 9 parâmetros do DTO de forma síncrona
     private ItemEstoqueResponseDTO converterParaDTO(ItemEstoque item) {
         return new ItemEstoqueResponseDTO(
                 item.getId(),
@@ -55,7 +54,9 @@ public class EstoqueService {
                 item.getQuantidadeAtual(),
                 item.getCapacityMaxima(),
                 calcularPorcentagem(item),
-                verificarStatusEstoque(item)
+                verificarStatusEstoque(item),
+                item.getInsumo().getCategoria(),
+                item.getInsumo().getUnidade()
         );
     }
 }

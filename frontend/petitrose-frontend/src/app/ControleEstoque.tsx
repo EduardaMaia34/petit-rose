@@ -19,10 +19,10 @@ const unidadesMedida = ['kg', 'g', 'unid', 'L', 'ml'];
 // Interface atualizada para espelhar perfeitamente o ItemEstoqueResponseDTO do Java
 interface ItemEstoqueDTO {
     id: string; // ID do ItemEstoque (UUID)
-    insumoId: string; // ✨ CORRIGIDO: Alinhado com o 'UUID insumoId' do seu DTO Java
+    insumoId: string; // Alinhado com o 'UUID insumoId' do seu DTO Java
     nomeInsumo: string;
     quantidadeAtual: number;
-    capacidadeMaxima: number; // ✨ CORRIGIDO: Alinhado com 'capacidadeMaxima' do DTO Java
+    capacidadeMaxima: number; // Alinhado com 'capacidadeMaxima' do DTO Java
     porcentagem: number;
     status: string;
     categoria?: string;
@@ -33,7 +33,7 @@ export const ControleEstoque = () => {
     const [insumos, setInsumos] = useState<ItemEstoqueDTO[]>([]);
     const [loading, setLoading] = useState(false);
 
-    // Estados de controle do Modal de Cadastro de Insumo
+    // Estados de controle do Modal de Cadastro/Edição de Insumo
     const [isModalInsumoAberto, setIsModalInsumoAberto] = useState(false);
     const [nome, setNome] = useState('');
     const [quantidade, setQuantidade] = useState('');
@@ -82,7 +82,6 @@ export const ControleEstoque = () => {
         }));
 
         try {
-            // Envia as propriedades corretas esperadas pelo objeto ItemEstoque do Java
             await api.put(`/estoque/item/${id}`, {
                 quantidadeAtual: novaQtd,
                 capacidadeMaxima: itemAlvo.capacidadeMaxima
@@ -93,6 +92,7 @@ export const ControleEstoque = () => {
         }
     };
 
+    // 3. EXCLUSÃO DE INSUMO PELO INSUMOID CORRETO DO JAVA
     const handleExcluirInsumo = async (insumoId: string) => {
         console.log("ID que estou tentando excluir:", insumoId);
         const result = await Swal.fire({
@@ -107,13 +107,10 @@ export const ControleEstoque = () => {
 
         if (result.isConfirmed) {
             try {
-                // Chamada ao seu InsumoController no backend
                 await api.delete(`/insumos/${insumoId}`);
-
-                // Remove da interface local
                 setInsumos(prev => prev.filter(i => i.insumoId !== insumoId));
-
                 Swal.fire('Excluído!', 'O insumo foi removido com sucesso.', 'success');
+                carregarEstoqueCompleto();
             } catch (error) {
                 console.error("Erro ao excluir:", error);
                 Swal.fire('Erro', 'Não foi possível excluir o insumo.', 'error');
@@ -121,29 +118,34 @@ export const ControleEstoque = () => {
         }
     };
 
-    // Mapeamento dinâmico de cores com base nas regras do EstoqueService do Java
-    const obterCoresPorStatus = (statusTxt: string) => {
-        if (statusTxt === 'Baixo Estoque' || statusTxt === 'Esgotado') {
-            return { corTexto: '#ff4d4d', corFundo: '#fff1f1', corBarra: '#ff4d4d' };
-        }
-        if (statusTxt === 'Médio' || statusTxt === 'Baixo') {
-            return { corTexto: '#710100', corFundo: '#fdf2f2', corBarra: '#710100' };
-        }
-        return { corTexto: '#28a745', corFundo: '#e6f7ed', corBarra: '#28a745' };
-    };
-
+    // 4. ATIVAÇÃO DO MODO DE EDIÇÃO E PREENCHIMENTO DOS CAMPOS
     const handleEditarInsumo = (insumo: ItemEstoqueDTO) => {
         setModoEdicao(true);
-        setItemEditando(insumo.id);
+        // 🔥 CORRIGIDO: Vincula o ID correto do Insumo para bater com a rota @PutMapping("/{id}") do Java
+        setItemEditando(insumo.insumoId || insumo.id);
 
         setNome(insumo.nomeInsumo);
         setQuantidade(insumo.quantidadeAtual.toString());
         setCapacidadeMax(insumo.capacidadeMaxima.toString());
+        setCategoria(insumo.categoria || '');
+        setUnidade(insumo.unidade || 'kg');
 
         setIsModalInsumoAberto(true);
     };
 
-    // 3. CADASTRO DE INSUMO SINCRONIZANDO O FLUXO DUPLO DO BACKEND
+    // Auxiliar para resetar estados ao fechar o modal com segurança
+    const fecharModalInsumoLimpo = () => {
+        setIsModalInsumoAberto(false);
+        setModoEdicao(false);
+        setItemEditando(null);
+        setNome('');
+        setQuantidade('');
+        setCapacidadeMax('');
+        setCategoria('');
+        setUnidade('kg');
+    };
+
+    // 5. SALVAMENTO UNIFICADO (CADASTRO VS EDIÇÃO)
     const handleSalvarInsumo = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -160,34 +162,51 @@ export const ControleEstoque = () => {
         try {
             setLoading(true);
 
-            await api.post('/insumos', {
+            // 💎 PAYLOAD CORRIGIDO: Mapeia as propriedades exatas que a entidade Insumo.java espera receber
+            const payloadInsumo = {
                 nome: nome,
                 valorUnitario: 0.0,
                 quantidadeAtual: parseInt(quantidade),
-                capacidadeMaxima: parseInt(capacidadeMax)
-            });
+                capacidadeMaxima: parseInt(capacidadeMax),
+                categoria: categoria, // Garante o envio da string ou ID selecionado
+                unidade: unidade       // Garante o envio da unidade (kg, g, unid...)
+            };
 
-            Swal.fire({
-                title: 'Insumo Cadastrado!',
-                text: `O item "${nome}" foi inserido com sucesso.`,
-                icon: 'success',
-                confirmButtonColor: '#710100'
-            });
+            if (modoEdicao && itemEditando) {
+                // 🔥 EDIÇÃO: Envia para o controller de Insumos
+                await api.put(`/insumos/${itemEditando}`, payloadInsumo);
 
-            setNome('');
-            setQuantidade('');
-            setCapacidadeMax('');
-            setCategoria('');
-            setIsModalInsumoAberto(false);
+                Swal.fire({
+                    title: 'Insumo Atualizado!',
+                    text: `O item "${nome}" foi editado com sucesso.`,
+                    icon: 'success',
+                    confirmButtonColor: '#710100'
+                });
+            } else {
+                // CADASTRO: Envia para o controller de Insumos
+                await api.post('/insumos', payloadInsumo);
 
-            carregarEstoqueCompleto();
+                Swal.fire({
+                    title: 'Insumo Cadastrado!',
+                    text: `O item "${nome}" foi inserido com sucesso.`,
+                    icon: 'success',
+                    confirmButtonColor: '#710100'
+                });
+            }
+
+            fecharModalInsumoLimpo();
+
+            // 🔥 FORÇA UMA ATUALIZAÇÃO DO BANCO: Adicionado um pequeno delay de 300ms
+            // para dar tempo do banco de dados MySQL consolidar o COMMIT do Spring Boot antes do recarregamento
+            setTimeout(async () => {
+                await carregarEstoqueCompleto();
+            }, 300);
 
         } catch (error) {
-            console.error(error);
-
+            console.error("Erro ao salvar insumo:", error);
             Swal.fire({
                 title: 'Erro',
-                text: 'Não foi possível salvar o insumo.',
+                text: 'Não foi possível salvar as alterações do insumo no servidor.',
                 icon: 'error',
                 confirmButtonColor: '#710100'
             });
@@ -196,7 +215,16 @@ export const ControleEstoque = () => {
         }
     };
 
-
+    // Mapeamento dinâmico de cores com base nas regras do Estoque
+    const obterCoresPorStatus = (statusTxt: string) => {
+        if (statusTxt === 'Baixo Estoque' || statusTxt === 'Esgotado') {
+            return { corTexto: '#ff4d4d', corFundo: '#fff1f1', corBarra: '#ff4d4d' };
+        }
+        if (statusTxt === 'Médio' || statusTxt === 'Baixo') {
+            return { corTexto: '#710100', corFundo: '#fdf2f2', corBarra: '#710100' };
+        }
+        return { corTexto: '#28a745', corFundo: '#e6f7ed', corBarra: '#28a745' };
+    };
 
     return (
         <div className="dashboard-page">
@@ -214,7 +242,7 @@ export const ControleEstoque = () => {
                         <button
                             className="btn btn-sm"
                             style={{ backgroundColor: '#710100', color: '#fff', padding: '10px 15px', borderRadius: '8px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', border: 'none' }}
-                            onClick={() => setIsModalInsumoAberto(true)}
+                            onClick={() => { setModoEdicao(false); setIsModalInsumoAberto(true); }}
                         >
                             <MdAdd style={{ fontSize: '1.1rem' }} /> Novo Insumo
                         </button>
@@ -226,8 +254,6 @@ export const ControleEstoque = () => {
 
                     {/* STATS CONTADORES */}
                     <div className="stats-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px', marginTop: '4px', marginBottom: '12px', width: '100%' }}>
-
-                        {/* Baixo Estoque */}
                         <div className="stat-box" style={{ padding: '20px 15px', border: '1px solid #f0e6e6', borderRadius: '12px', background: '#ffffff', display: 'flex', alignItems: 'center', gap: '15px', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
                             <div style={{ width: '46px', height: '46px', borderRadius: '50%', backgroundColor: '#fff1f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <MdWarning style={{ fontSize: '1.5rem', color: '#ff4d4d' }} />
@@ -240,7 +266,6 @@ export const ControleEstoque = () => {
                             </div>
                         </div>
 
-                        {/* Total Cadastrado */}
                         <div className="stat-box" style={{ padding: '20px 15px', border: '1px solid #f0e6e6', borderRadius: '12px', background: '#ffffff', display: 'flex', alignItems: 'center', gap: '15px', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
                             <div style={{ width: '46px', height: '46px', borderRadius: '50%', backgroundColor: '#e6f7ed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <MdInventory style={{ fontSize: '1.5rem', color: '#28a745' }} />
@@ -267,7 +292,7 @@ export const ControleEstoque = () => {
                                 <th>Qtd Atual</th>
                                 <th>Capacidade Máx</th>
                                 <th>Nível do Estoque</th>
-                                <th style={{ textAlign: 'center' }}>Ajuste Rápido</th>
+                                <th style={{ textAlign: 'center' }}>Ações</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -319,18 +344,7 @@ export const ControleEstoque = () => {
 
                                                 <button
                                                     onClick={() => handleEditarInsumo(insumo)}
-                                                    style={{
-                                                        width: '28px',
-                                                        height: '28px',
-                                                        borderRadius: '6px',
-                                                        border: '1px solid #0d6efd',
-                                                        backgroundColor: '#eef5ff',
-                                                        color: '#0d6efd',
-                                                        cursor: 'pointer',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center'
-                                                    }}
+                                                    style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #0d6efd', backgroundColor: '#eef5ff', color: '#0d6efd', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                     title="Editar Insumo"
                                                 >
                                                     <MdEdit />
@@ -338,12 +352,7 @@ export const ControleEstoque = () => {
 
                                                 <button
                                                     onClick={() => handleExcluirInsumo(insumo.insumoId)}
-                                                    style={{
-                                                        width: '28px', height: '28px', borderRadius: '6px',
-                                                        border: '1px solid #ff4d4d', backgroundColor: '#fff1f1',
-                                                        color: '#ff4d4d', cursor: 'pointer', display: 'flex',
-                                                        alignItems: 'center', justifyContent: 'center'
-                                                    }}
+                                                    style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #ff4d4d', backgroundColor: '#fff1f1', color: '#ff4d4d', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                     title="Excluir Insumo"
                                                 >
                                                     <MdDelete />
@@ -357,7 +366,7 @@ export const ControleEstoque = () => {
                         </table>
                     </div>
 
-                    {/* MODAL DE CADASTRO DE INSUMO */}
+                    {/* 🔥 MODAL DINÂMICO DE CADASTRO / EDIÇÃO DE INSUMO */}
                     {isModalInsumoAberto && (
                         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(113, 1, 0, 0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999, backdropFilter: 'blur(3px)' }}>
                             <div className="report-container" style={{ backgroundColor: '#ffffff', padding: '30px', width: '500px', borderRadius: '15px', display: 'flex', flexDirection: 'column', gap: '15px', border: '1px solid #f0e6e6' }}>
@@ -367,25 +376,28 @@ export const ControleEstoque = () => {
                                         <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#fdf2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                             <MdInventory style={{ fontSize: '1.2rem', color: '#710100' }} />
                                         </div>
-                                        <h2 style={{ color: '#710100', margin: 0, fontFamily: 'Abhaya Libre', fontSize: '24px', fontWeight: 'bold' }}>Cadastrar Novo Insumo</h2>
+                                        {/* ✨ TEXTO DINÂMICO CONFORME O STATUS DE EDIÇÃO */}
+                                        <h2 style={{ color: '#710100', margin: 0, fontFamily: 'Abhaya Libre', fontSize: '24px', fontWeight: 'bold' }}>
+                                            {modoEdicao ? 'Editar Insumo Existente' : 'Cadastrar Novo Insumo'}
+                                        </h2>
                                     </div>
-                                    <button type="button" onClick={() => setIsModalInsumoAberto(false)} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: '#6c757d' }}>&times;</button>
+                                    <button type="button" onClick={fecharModalInsumoLimpo} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: '#6c757d' }}>&times;</button>
                                 </div>
 
                                 <form onSubmit={handleSalvarInsumo} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                         <label style={{ fontWeight: '600', fontSize: '0.85rem', color: '#6c757d' }}>Nome do Ingrediente *</label>
-                                        <input type="text" placeholder="Ex: Chocolate em Pó Nestlé 50%" value={nome} onChange={(e) => setNome(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #ced4da', fontSize: '0.95rem' }} />
+                                        <input type="text" placeholder="Ex: Chocolate em Pó Nestlé 50%" value={nome} onChange={(e) => setNome(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #ced4da', fontSize: '0.95rem' }} required />
                                     </div>
 
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                             <label style={{ fontWeight: '600', fontSize: '0.85rem', color: '#6c757d' }}>Quantidade Atual *</label>
-                                            <input type="number" placeholder="0" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #ced4da', fontSize: '0.95rem' }} />
+                                            <input type="number" placeholder="0" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #ced4da', fontSize: '0.95rem' }} required />
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                             <label style={{ fontWeight: '600', fontSize: '0.85rem', color: '#6c757d' }}>Capacidade Máxima *</label>
-                                            <input type="number" placeholder="Ex: 50" value={capacidadeMax} onChange={(e) => setCapacidadeMax(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #ced4da', fontSize: '0.95rem' }} />
+                                            <input type="number" placeholder="Ex: 50" value={capacidadeMax} onChange={(e) => setCapacidadeMax(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #ced4da', fontSize: '0.95rem' }} required />
                                         </div>
                                     </div>
 
@@ -398,7 +410,7 @@ export const ControleEstoque = () => {
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                             <label style={{ fontWeight: '600', fontSize: '0.85rem', color: '#6c757d' }}>Categoria *</label>
-                                            <select value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #ced4da', fontSize: '0.95rem', backgroundColor: '#fff' }}>
+                                            <select value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #ced4da', fontSize: '0.95rem', backgroundColor: '#fff' }} required>
                                                 <option value="">Selecione...</option>
                                                 {categoriasInsumo.map((cat) => <option key={cat.id} value={cat.id}>{cat.nome}</option>)}
                                             </select>
@@ -406,8 +418,11 @@ export const ControleEstoque = () => {
                                     </div>
 
                                     <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px', borderTop: '2px solid #fff1f1', paddingTop: '15px' }}>
-                                        <button type="button" onClick={() => setIsModalInsumoAberto(false)} className="status-btn-em-preparo" style={{ backgroundColor: '#f5f5f5', color: '#6c757d', border: '1px solid #ced4da', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}>Cancelar</button>
-                                        <button type="submit" className="status-btn-pagamento" style={{ padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}>Salvar Insumo</button>
+                                        <button type="button" onClick={fecharModalInsumoLimpo} className="status-btn-em-preparo" style={{ backgroundColor: '#f5f5f5', color: '#6c757d', border: '1px solid #ced4da', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}>Cancelar</button>
+                                        {/* ✨ BOTÃO REATIVO CONFORME O MODO DE EDIÇÃO */}
+                                        <button type="submit" className="status-btn-pagamento" style={{ padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}>
+                                            {modoEdicao ? 'Atualizar Dados' : 'Salvar Insumo'}
+                                        </button>
                                     </div>
                                 </form>
                             </div>

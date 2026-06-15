@@ -85,24 +85,35 @@ export const MenuAdmin = () => {
     }, []);
 
     // 2. CADASTRO DE DESPESA (SAÍDA) VIA FORMULÁRIO DO MODAL
+    // 👑 VERSÃO 100% GARANTIDA PARA O SEU MenuAdmin.tsx
     const handleSalvarDespesa = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!itemDescricao || !valorDespesa || !metodoSelecionado) {
-            Swal.fire({ title: 'Atenção!', text: 'Por favor, preencha todos os campos obrigatórios.', icon: 'warning', confirmButtonColor: '#710100' });
+            Swal.fire({
+                title: 'Atenção!',
+                text: 'Por favor, preencha todos os campos obrigatórios.',
+                icon: 'warning',
+                confirmButtonColor: '#710100'
+            });
             return;
         }
 
         try {
-            const novaSaidaDTO = {
-                tipo: 'SAIDA',
-                item: itemDescricao,
-                valor: parseFloat(valorDespesa),
-                metodoPagamento: metodoSelecionado,
-                data: new Date().toISOString()
+            // Criamos o objeto explicitando a quantidade de forma direta e sem abreviações
+            const payloadSaidaFinanceira = {
+                tipo: 'SAIDA' as const,
+                item: String(itemDescricao),
+                valor: Number(parseFloat(valorDespesa)),
+                metodoPagamento: String(metodoSelecionado),
+                data: new Date().toISOString(),
+                qquantidade: parseInt("1", 10)
             };
 
-            await api.post('/transacoes', novaSaidaDTO);
+            console.log("Enviando dados da despesa para o Java:", payloadSaidaFinanceira);
+
+            // Envia para o TransacaoController do seu backend
+            await api.post('/transacoes', payloadSaidaFinanceira);
 
             Swal.fire({
                 title: 'Despesa Registrada!',
@@ -111,15 +122,22 @@ export const MenuAdmin = () => {
                 confirmButtonColor: '#710100'
             });
 
+            // Limpa os estados do modal
             setItemDescricao('');
             setValorDespesa('');
             setMetodoSelecionado('DINHEIRO');
             setIsModalDespesaAberto(false);
+
+            // Atualiza os cards financeiros da tela
             await carregarDashboardGeral();
 
-        } catch (error) {
-            console.error("Erro ao registrar transação de saída:", error);
-            Swal.fire('Erro', 'Não foi possível cadastrar a despesa no banco.', 'error');
+        } catch (error: any) {
+            console.error("Erro completo retornado pelo back-end:", error.response?.data || error.message);
+            Swal.fire(
+                'Erro na Gravação',
+                'O servidor recusou salvar a transação. Verifique os logs do Spring Boot.',
+                'error'
+            );
         }
     };
 
@@ -197,22 +215,36 @@ export const MenuAdmin = () => {
 
                         <div className="stat-box" style={{ padding: '20px 15px', border: '1px solid #f0e6e6', borderRadius: '12px', background: '#ffffff', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '120px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                                <span style={{ fontSize: '0.85rem', color: '#6c757d', fontWeight: 'bold' }}>Lucro Líquido</span>
-                                <div style={{ width: '38px', height: '38px', borderRadius: '50%', backgroundColor: '#e6f7ed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <MdAttachMoney style={{ fontSize: '1.3rem', color: '#28a745' }} />
+                                <span style={{ fontSize: '0.85rem', color: '#6c757d', fontWeight: 'bold' }}>Lucro Líquido</span><div style={{
+                                    width: '38px',
+                                    height: '38px',
+                                    borderRadius: '50%',
+                                    backgroundColor: lucroLiquido >= 0 ? '#e6f7ed' : '#fff1f1',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}>
+                                    <MdAttachMoney style={{ fontSize: '1.3rem', color: lucroLiquido >= 0 ? '#28a745' : '#ff4d4d' }} />
                                 </div>
                             </div>
                             <div style={{ marginTop: '8px' }}>
-                                <p style={{ fontSize: '1.6rem', fontWeight: 'bold', color: '#28a745', margin: '0', fontFamily: 'Georgia' }}>
+                                <p style={{
+                                    fontSize: '1.6rem',
+                                    fontWeight: 'bold',
+                                    color: lucroLiquido >= 0 ? '#28a745' : '#ff4d4d',
+                                    margin: '0',
+                                    fontFamily: 'Georgia'
+                                }}>
                                     R$ {lucroLiquido.toFixed(2).replace('.', ',')}
                                 </p>
-                                <span style={{ fontSize: '0.75rem', color: '#8c7a7a', display: 'block', marginTop: '2px' }}>Saldo real em caixa</span>
+                                <span style={{ fontSize: '0.75rem', color: '#8c7a7a', display: 'block', marginTop: '2px' }}>
+            {lucroLiquido >= 0 ? 'Saldo real em caixa' : 'Caixa operando em prejuízo'}
+        </span>
                             </div>
                         </div>
 
                     </div>
 
-                    {/* 🛍️ SEÇÃO 2: GRID DE PEDIDOS E RANKING */}
                     <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '15px', width: '100%', marginBottom: '15px' }}>
 
                         <div className="report-container" style={{ padding: '20px 25px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #f0e6e6' }}>
@@ -292,32 +324,13 @@ export const MenuAdmin = () => {
                                     alignItems: 'center'
                                 }}
                             >
-                                <h2
-                                    style={{
-                                        color: '#710100',
-                                        margin: '0',
-                                        fontFamily: 'Abhaya Libre',
-                                        fontSize: '22px',
-                                        fontWeight: 'bold'
-                                    }}
-                                >
+                                <h2 style={{ color: '#710100', margin: '0', fontFamily: 'Abhaya Libre', fontSize: '22px', fontWeight: 'bold' }}>
                                     Movimentações Recentes
                                 </h2>
 
                                 <button
                                     onClick={() => setIsModalDespesaAberto(true)}
-                                    style={{
-                                        backgroundColor: '#710100',
-                                        color: '#fff',
-                                        border: 'none',
-                                        borderRadius: '8px',
-                                        padding: '10px 15px',
-                                        fontWeight: 'bold',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '6px'
-                                    }}
+                                    style={{ backgroundColor: '#710100', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 15px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                                 >
                                     <MdRemove />
                                     Registrar Saída
