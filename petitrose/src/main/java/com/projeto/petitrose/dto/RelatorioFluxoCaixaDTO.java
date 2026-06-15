@@ -13,6 +13,7 @@ public record RelatorioFluxoCaixaDTO(
         BigDecimal saldo,
         Map<String, BigDecimal> faturamentoPorMetodoPagamento,
         Map<String, BigDecimal> despesaPorMetodoPagamento,
+        Map<String, Long> quantidadePorMetodoPagamento,
         List<ItemVendidoDTO> itensMaisVendidos,
         List<TransacaoResponseDTO> transacoes
 ) {}
