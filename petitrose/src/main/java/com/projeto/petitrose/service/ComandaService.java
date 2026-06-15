@@ -35,6 +35,11 @@ public class ComandaService {
     @Autowired
     private TransacaoRepository transacaoRepository;
 
+    private static class ProdutoResumo {
+        int quantidade = 0;
+        BigDecimal subtotal = BigDecimal.ZERO;
+    }
+
     // abrir nova comanda
     public ComandaResponseDTO abrirNovaComanda(ComandaRequestDTO dto) {
         Comanda comanda = new Comanda();
@@ -78,7 +83,7 @@ public class ComandaService {
 
         // 1. REGISTRAR TRANSAÇÕES ANTES DE LIMPAR O RELACIONAMENTO
         if (comanda.getPedidos() != null && !comanda.getPedidos().isEmpty()) {
-            Map<String, BigDecimal> subtotalPorProduto = new HashMap<>();
+            Map<String, ProdutoResumo> produtos = new HashMap<>();
             
             for (Pedido pedido : comanda.getPedidos()) {
                 if (pedido.getItens() != null) {
@@ -89,18 +94,24 @@ public class ComandaService {
                             BigDecimal preco = item.getPrecoUnitario() != null ? item.getPrecoUnitario() : BigDecimal.ZERO;
                             BigDecimal subtotal = preco.multiply(BigDecimal.valueOf(quant));
 
-                            subtotalPorProduto.put(nomeProduto, subtotalPorProduto.getOrDefault(nomeProduto, BigDecimal.ZERO).add(subtotal));
+                            ProdutoResumo resumo =
+                                    produtos.computeIfAbsent(nomeProduto,
+                                            k -> new ProdutoResumo());
+
+                            resumo.quantidade += quant;
+                            resumo.subtotal = resumo.subtotal.add(subtotal);
                         }
                     }
                 }
             }
 
-            for (Map.Entry<String, BigDecimal> entry : subtotalPorProduto.entrySet()) {
-                if (entry.getValue().compareTo(BigDecimal.ZERO) > 0) {
+            for (Map.Entry<String, ProdutoResumo> entry : produtos.entrySet()) {
+                if (entry.getValue().subtotal.compareTo(BigDecimal.ZERO) > 0) {
                     Transacao transacao = new Transacao();
                     transacao.setTipo(TipoTransacao.ENTRADA);
                     transacao.setItem(entry.getKey());
-                    transacao.setValor(entry.getValue());
+                    transacao.setValor(entry.getValue().subtotal);
+                    transacao.setQuantidade(entry.getValue().quantidade);
                     transacao.setData(comanda.getDataFechamento());
                     transacao.setMetodoPagamento(metodoPagamento);
                     transacaoRepository.save(transacao);
@@ -186,21 +197,36 @@ public class ComandaService {
                 .stream()
                 .collect(Collectors.toList());
 
-        
-        Map<String, BigDecimal> subtotalPorProduto = new HashMap<>();
-        
+
+        Map<String, ProdutoResumo> produtos = new HashMap<>();
+
         for (Comanda comanda : comandas) {
             if (comanda.getPedidos() != null) {
                 for (Pedido pedido : comanda.getPedidos()) {
                     if (pedido.getItens() != null) {
                         for (ItemPedido item : pedido.getItens()) {
                             if (item.getProduto() != null) {
-                                String nomeProduto = item.getProduto().getNome();
-                                int quant = item.getQuantidade() != null ? item.getQuantidade() : 0;
-                                BigDecimal preco = item.getPrecoUnitario() != null ? item.getPrecoUnitario() : BigDecimal.ZERO;
-                                BigDecimal subtotal = preco.multiply(BigDecimal.valueOf(quant));
 
-                                subtotalPorProduto.put(nomeProduto, subtotalPorProduto.getOrDefault(nomeProduto, BigDecimal.ZERO).add(subtotal));
+                                String nomeProduto = item.getProduto().getNome();
+                                int quant = item.getQuantidade() != null
+                                        ? item.getQuantidade()
+                                        : 0;
+
+                                BigDecimal preco = item.getPrecoUnitario() != null
+                                        ? item.getPrecoUnitario()
+                                        : BigDecimal.ZERO;
+
+                                BigDecimal subtotal =
+                                        preco.multiply(BigDecimal.valueOf(quant));
+
+                                ProdutoResumo resumo =
+                                        produtos.computeIfAbsent(
+                                                nomeProduto,
+                                                k -> new ProdutoResumo()
+                                        );
+
+                                resumo.quantidade += quant;
+                                resumo.subtotal = resumo.subtotal.add(subtotal);
                             }
                         }
                     }
@@ -210,14 +236,22 @@ public class ComandaService {
 
         LocalDateTime agora = LocalDateTime.now();
 
-        for (Map.Entry<String, BigDecimal> entry : subtotalPorProduto.entrySet()) {
-            if (entry.getValue().compareTo(BigDecimal.ZERO) > 0) {
+        for (Map.Entry<String, ProdutoResumo> entry : produtos.entrySet()) {
+
+            ProdutoResumo resumo = entry.getValue();
+
+            if (resumo.subtotal.compareTo(BigDecimal.ZERO) > 0) {
+
                 Transacao transacao = new Transacao();
                 transacao.setTipo(TipoTransacao.ENTRADA);
                 transacao.setItem(entry.getKey());
-                transacao.setValor(entry.getValue());
+
+                transacao.setValor(resumo.subtotal);
+                transacao.setQuantidade(resumo.quantidade);
+
                 transacao.setData(agora);
                 transacao.setMetodoPagamento(request.metodoPagamento());
+
                 transacaoRepository.save(transacao);
             }
         }

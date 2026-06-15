@@ -43,11 +43,13 @@ public class RelatorioService {
 
         Map<String, BigDecimal> faturamentoPorMetodo = new HashMap<>();
         Map<String, BigDecimal> despesaPorMetodo = new HashMap<>();
+        Map<String, Long> quantidadePorMetodoPagamento = new HashMap<>();
 
         // Initialize maps with zero for all payment methods
         for (MetodoPagamento metodo : MetodoPagamento.values()) {
             faturamentoPorMetodo.put(metodo.name(), BigDecimal.ZERO);
             despesaPorMetodo.put(metodo.name(), BigDecimal.ZERO);
+            quantidadePorMetodoPagamento.put(metodo.name(), 0L);
         }
 
         Map<String, ItemVendidoAcumulador> itensVendidosMap = new HashMap<>();
@@ -70,13 +72,31 @@ public class RelatorioService {
                 totalEntradas = totalEntradas.add(valor);
 
                 if (!metodoStr.isEmpty()) {
+                    quantidadePorMetodoPagamento.put(
+                            metodoStr,
+                            quantidadePorMetodoPagamento.getOrDefault(metodoStr, 0L) + 1
+                    );
+                }
+
+                if (!metodoStr.isEmpty()) {
                     faturamentoPorMetodo.put(metodoStr, faturamentoPorMetodo.getOrDefault(metodoStr, BigDecimal.ZERO).add(valor));
                 }
 
                 // Group as sold item
                 String itemNome = transacao.getItem();
-                ItemVendidoAcumulador acum = itensVendidosMap.computeIfAbsent(itemNome, k -> new ItemVendidoAcumulador(itemNome));
-                acum.add(1L, valor);
+
+                long quantidade =
+                        transacao.getQuantidade() != null
+                                ? transacao.getQuantidade().longValue()
+                                : 0L;
+
+                ItemVendidoAcumulador acum =
+                        itensVendidosMap.computeIfAbsent(
+                                itemNome,
+                                k -> new ItemVendidoAcumulador(itemNome)
+                        );
+
+                acum.add(quantidade, valor);
             } else if (transacao.getTipo() == TipoTransacao.SAIDA) {
                 totalSaidas = totalSaidas.add(valor);
 
@@ -104,6 +124,7 @@ public class RelatorioService {
                 saldo,
                 faturamentoPorMetodo,
                 despesaPorMetodo,
+                quantidadePorMetodoPagamento,
                 itensMaisVendidos,
                 transacoesDTOs
         );

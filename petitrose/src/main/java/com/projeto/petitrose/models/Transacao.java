@@ -29,6 +29,9 @@ public class Transacao implements Serializable {
     private BigDecimal valor;
 
     @Column(nullable = false)
+    private Integer quantidade;
+
+    @Column(nullable = false)
     private LocalDateTime data = LocalDateTime.now();
 
     @Enumerated(EnumType.STRING)

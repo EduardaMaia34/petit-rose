@@ -35,6 +35,7 @@ interface RelatorioFluxoCaixaDTO {
     saldo: number;
     faturamentoPorMetodoPagamento: Record<string, number>;
     despesaPorMetodoPagamento: Record<string, number>;
+    quantidadePorMetodoPagamento: Record<string, number>;
     itensMaisVendidos: ItemVendidoDTO[];
 }
 
@@ -106,11 +107,12 @@ export const Relatorios = () => {
     const totalSaidas = dadosRelatorio?.totalSaidas ?? 0;
     const saldoConsolidado = dadosRelatorio?.saldo ?? 0;
     const maisVendidos = dadosRelatorio?.itensMaisVendidos || [];
-    const faturamentoMetodos = dadosRelatorio?.faturamentoPorMetodoPagamento || {};
-    const dadosPizza = Object.entries(faturamentoMetodos).map(
-        ([metodo, valor]) => ({
+    const quantidadeMetodos =
+        dadosRelatorio?.quantidadePorMetodoPagamento || {};
+    const dadosPizza = Object.entries(quantidadeMetodos).map(
+        ([metodo, quantidade]) => ({
             name: metodo.replace('_', ' '),
-            value: valor || 0
+            value: quantidade || 0
         })
     );
 
@@ -127,14 +129,7 @@ export const Relatorios = () => {
         '#f7b3b8',
         '#fde2e2'
     ];
-    // Mapeia os dados protegendo contra valores nulos/indefinidos
-    const dadosGraficoMetodos = Object.entries(faturamentoMetodos).map(([metodo, valor]) => {
-        const valorTratado = valor ?? 0;
-        const valoresLimpos = Object.values(faturamentoMetodos).map(v => v ?? 0);
-        const maiorValor = Math.max(...valoresLimpos, 1);
-        const alturaCalculada = `${(valorTratado / maiorValor) * 100}%`;
-        return { metodo, valor: valorTratado, alturaBarra: alturaCalculada };
-    });
+
 
     return (
         <div className="dashboard-page">
