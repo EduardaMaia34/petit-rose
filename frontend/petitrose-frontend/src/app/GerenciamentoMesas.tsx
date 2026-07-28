@@ -1,0 +1,490 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Navbar } from './Navbar';
+import Swal from 'sweetalert2';
+import { api } from "./api";
+import '../index.css';
+import {
+    MdTableRestaurant,
+    MdFlashOn,
+    MdAdd,
+    MdReceipt,
+    MdRestaurantMenu,
+    MdShoppingBasket,
+    MdRemove,
+    MdSend,
+    MdShoppingCart
+} from 'react-icons/md';
+
+interface ProdutoBackend {
+    id: string;
+    nome: string;
+    valor: number;
+    catalogoAtivo: boolean;
+}
+
+interface ItemComanda {
+    id: string;
+    nome: string;
+    preco: number;
+    quantidade: number;
+}
+
+interface ComandaAtiva {
+    id: string;
+    codigoIdentificador: string;
+    valorTotalComanda: number;
+    carrinho: ItemComanda[];
+}
+
+interface MesaSalao {
+    numeroMesa: number;
+    aberta: boolean;
+    valorTotalMesa: number;
+    comandas: ComandaAtiva[];
+}
+
+export const GerenciamentoMesas = () => {
+    const navigate = useNavigate();
+    const [mesas, setMesas] = useState<MesaSalao[]>([]);
+    const [cardapio, setCardapio] = useState<ProdutoBackend[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    const [mesaSelecionada, setMesaSelecionada] = useState<MesaSalao | null>(null);
+    const [comandaAtivaId, setComandaAtivaId] = useState<string | null>(null);
+    const [isModalAberto, setIsModalAberto] = useState(false);
+
+    // Rascunho local controlado antes do envio para o banco de dados
+    const [rascunhoItens, setRascunhoItens] = useState<ItemComanda[]>([]);
+
+    // 1. CARREGAMENTO E SINCRO DE ENTRADA DO BANCO
+    const inicializarSalao = async () => {
+        try {
+            if (!isModalAberto) setLoading(true);
+
+            const [responseComandas, responseProdutos] = await Promise.all([
+                api.get('/comandas/ativas'),
+                api.get('/produtos')
+            ]);
+
+            const todasComandas = responseComandas.data;
+            setCardapio(responseProdutos.data.filter((p: any) => p.catalogoAtivo || p.catalogo_ativo));
+
+            const salaoMapeado: MesaSalao[] = Array.from({ length: 9 }, (_, idx) => {
+                const numero = idx + 1;
+                const comandasDaMesa = todasComandas.filter((c: any) => c.numeroMesa === numero);
+
+                return {
+                    numeroMesa: numero,
+                    aberta: comandasDaMesa.length > 0,
+                    valorTotalMesa: comandasDaMesa.reduce((acc: number, c: any) => acc + (c.valorTotal || c.valorTotalComanda || c.total || 0), 0),
+                    comandas: comandasDaMesa.map((c: any, cIdx: number) => {
+                        let itensMapeados: ItemComanda[] = [];
+
+                        // 🔥 MAPEAMENTO UNIFICADO E SEGURO DOS ITENS CONFIRMADOS
+                        // Tenta extrair de c.pedidos (Lista de pedidos vinculados)
+                        if (c.pedidos && Array.isArray(c.pedidos)) {
+                            c.pedidos.forEach((p: any) => {
+                                if (p.itens && Array.isArray(p.itens)) {
+                                    p.itens.forEach((item: any) => {
+                                        itensMapeados.push({
+                                            id: item.id || item.produto?.id || item.produtoId,
+                                            nome: item.produto?.nome || item.nomeProduto || "Item",
+                                            preco: item.precoUnitario || item.produto?.valor || 0,
+                                            quantidade: item.quantidade || 1
+                                        });
+                                    });
+                                }
+                            });
+                        }
+
+                        // Fallback alternativa: tenta extrair direto de c.itens ou c.itensConsolidados se vier pré-agrupado do backend
+                        const itensDiretos = c.itens || c.itensConsolidados || c.carrinho;
+                        if (itensDiretos && Array.isArray(itensDiretos) && itensMapeados.length === 0) {
+                            itensDiretos.forEach((item: any) => {
+                                itensMapeados.push({
+                                    id: item.id || item.produto?.id || item.produtoId,
+                                    nome: item.produto?.nome || item.nomeProduto || "Item",
+                                    preco: item.precoUnitario || item.produto?.valor || item.preco || 0,
+                                    quantidade: item.quantidade || 1
+                                });
+                            });
+                        }
+
+                        return {
+                            id: c.id,
+                            codigoIdentificador: `Comanda ${cIdx + 1}`,
+                            valorTotalComanda: c.valorTotal || c.valorTotalComanda || c.total || itensMapeados.reduce((acc, i) => acc + (i.preco * i.quantidade), 0),
+                            carrinho: itensMapeados
+                        };
+                    })
+                };
+            });
+
+            setMesas(salaoMapeado);
+
+            if (mesaSelecionada) {
+                const mesaAtualizada = salaoMapeado.find(m => m.numeroMesa === mesaSelecionada.numeroMesa);
+                if (mesaAtualizada && mesaAtualizada.aberta) {
+                    setMesaSelecionada(mesaAtualizada);
+                } else {
+                    fecharModalLimpo();
+                }
+            }
+        } catch (error) {
+            console.error("Erro na sincronização:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        inicializarSalao();
+    }, []);
+
+    const fecharModalLimpo = () => {
+        setIsModalAberto(false);
+        setMesaSelecionada(null);
+        setComandaAtivaId(null);
+        setRascunhoItens([]);
+    };
+
+    const handleAbrirMesaOuComanda = async (mesa: MesaSalao) => {
+        if (!mesa.aberta) {
+            const result = await Swal.fire({
+                title: `Abrir Mesa ${String(mesa.numeroMesa).padStart(2, '0')}?`,
+                text: "Uma nova comanda será aberta para esta mesa.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Abrir Mesa',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#28a745'
+            });
+            if (!result.isConfirmed) return;
+            await criarNovaComandaNoBanco(mesa.numeroMesa);
+        } else {
+            setMesaSelecionada(mesa);
+            setComandaAtivaId(mesa.comandas[0]?.id || null);
+            setRascunhoItens([]);
+            setIsModalAberto(true);
+        }
+    };
+
+    const criarNovaComandaNoBanco = async (numeroMesa: number) => {
+        try {
+            const res = await api.post('/comandas', { numeroMesa });
+            const novaComandaId = res.data.id;
+            await inicializarSalao();
+            setComandaAtivaId(novaComandaId);
+            setRascunhoItens([]);
+            setIsModalAberto(true);
+        } catch (error) {
+            Swal.fire('Erro', 'Não foi possível abrir a comanda.', 'error');
+        }
+    };
+
+    const handleAdicionarMaisUmaComanda = async () => {
+        if (!mesaSelecionada) return;
+        await criarNovaComandaNoBanco(mesaSelecionada.numeroMesa);
+    };
+
+    const handleAdicionarItemMesa = (produtoId: string) => {
+        const produto = cardapio.find(p => p.id === produtoId);
+        if (!produto) return;
+
+        setRascunhoItens(prev => {
+            const existente = prev.find(item => item.id === produtoId);
+            if (existente) {
+                return prev.map(item => item.id === produtoId ? { ...item, quantidade: item.quantidade + 1 } : item);
+            }
+            return [...prev, { id: produto.id, nome: produto.nome, preco: produto.valor, quantidade: 1 }];
+        });
+    };
+
+    const handleAlterarQuantidadeRascunho = (produtoId: string, operacao: 'somar' | 'subtrair') => {
+        setRascunhoItens(prev => {
+            return prev.map(item => {
+                if (item.id !== produtoId) return item;
+                const novaQtd = operacao === 'somar' ? item.quantidade + 1 : item.quantidade - 1;
+                return { ...item, quantidade: novaQtd };
+            }).filter(item => item.quantidade > 0);
+        });
+    };
+
+    const handleLancarPedidoCompleto = async () => {
+        if (!comandaAtivaId || !mesaSelecionada || rascunhoItens.length === 0) return;
+
+        try {
+            setLoading(true);
+
+            await api.post(`/pedidos/comanda/${comandaAtivaId}`, {
+                numeroMesa: mesaSelecionada.numeroMesa,
+                itens: rascunhoItens.map(item => ({
+                    produtoId: item.id,
+                    quantidade: item.quantidade,
+                    observacao: "Salão"
+                }))
+            });
+
+            setRascunhoItens([]);
+            await inicializarSalao();
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Pedido lançado com sucesso!',
+                showConfirmButton: false,
+                timer: 2000
+            });
+        } catch (error) {
+            console.error("Erro ao lançar pedido:", error);
+            Swal.fire('Erro', 'Não foi possível salvar o pedido no servidor.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRemoverItemSalvo = async (produtoId: string) => {
+        if (!comandaAtivaId) return;
+        try {
+            await api.delete(`/pedidos/${comandaAtivaId}/item/${produtoId}`);
+            await inicializarSalao();
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    // Substitua ou atualize a função handleFecharComandaUnica por esta versão:
+    const handleFecharComandaUnica = async () => {
+        if (!comandaAtivaId) return;
+
+        try {
+            // 1. Buscar os detalhes completos da comanda e seus pedidos reais do backend antes de fechar
+            const responseComandaCompleta = await api.get(`/pedidos`);
+            // Filtra os pedidos que pertencem a esta comanda ativa e que não estão concluídos ou cancelados
+            const pedidosPendentes = responseComandaCompleta.data.filter((pedido: any) =>
+                pedido.comanda?.id === comandaAtivaId &&
+                pedido.status !== 'CONCLUIDO' &&
+                pedido.status !== 'CANCELADO'
+            );
+
+            // 2. Se houver qualquer pedido que não foi finalizado/entregue, bloqueia o fechamento
+            if (pedidosPendentes.length > 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Não é possível fechar a conta!',
+                    html: `Esta mesa possui <strong>${pedidosPendentes.length} pedido(s)</strong> ainda em preparo ou pendentes de entrega na cozinha.<br><br><small>Por favor, conclua ou cancele os pedidos na tela de Produção antes de liberar o faturamento da mesa.</small>`,
+                    confirmButtonColor: '#710100'
+                });
+                return;
+            }
+
+            // 3. Caso todos estejam CONCLUÍDOS, segue o fluxo normal de seleção do método e fechamento
+            const { value: metodo } = await Swal.fire({
+                title: 'Selecione a Forma de Pagamento',
+                input: 'select',
+                inputOptions: {
+                    'PIX': 'Pix',
+                    'DINHEIRO': 'Dinheiro',
+                    'CARTAO_CREDITO': 'Cartão de Crédito',
+                    'CARTAO_DEBITO': 'Cartão de Débito'
+                },
+                inputPlaceholder: 'Escolha o método...',
+                showCancelButton: true,
+                confirmButtonColor: '#710100',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Finalizar e Liquidar',
+                cancelButtonText: 'Voltar'
+            });
+
+            if (!metodo) return;
+
+            setLoading(true);
+            // Enviando com o RequestParam corrigido que causava o erro anterior
+            await api.put(`/comandas/${comandaAtivaId}/fechar?metodoPagamento=${metodo}`);
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Conta Fechada!',
+                text: 'Mesa desocupada e faturamento registrado no Caixa.',
+                confirmButtonColor: '#710100'
+            });
+
+            setIsModalAberto(false);
+            setMesaSelecionada(null);
+            setComandaAtivaId(null);
+            inicializarSalao(); // Atualiza o grid de mesas do salão
+
+        } catch (error) {
+            console.error(error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro ao fechar conta',
+                text: 'Não foi possível processar a liquidação desta comanda.',
+                confirmButtonColor: '#710100'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="dashboard-page">
+            <Navbar abaAtiva="mesas"/>
+
+            <div className="main-container">
+                <div className="content-wrapper" style={{ display: 'flex', flexDirection: 'column' }}>
+
+                    <div className="dashboard-header" style={{ marginBottom: '1px', width: '100%' }}>
+                        <h1 style={{ color: '#710100', fontSize: '1.9rem', fontWeight: 'bold', margin: '0' }}>Gerenciamento de Mesas</h1>
+                        <p style={{ color: '#6c757d', marginTop: '2px', marginBottom: '0' }}>Gerencie o consumo das mesas em tempo real ou direcione para a venda rápida de balcão.</p>
+                    </div>
+
+                    {loading && (
+                        <div style={{ textAlign: 'center', marginBottom: '10px', color: '#710100', fontSize: '0.9rem' }}>Sincronizando com o salão...</div>
+                    )}
+
+                    {/* GRID SALÃO */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '15px', width: '100%' }}>
+                        {/* CARD BALCÃO */}
+                        <div className="stat-box" style={{ padding: '20px 15px', textAlign: 'center', border: '1px solid #ffcccc', borderRadius: '12px', background: '#fff1f1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', minHeight: '220px' }}>
+                            <div style={{ width: '46px', height: '46px', borderRadius: '50%', backgroundColor: '#ffe4e4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <MdFlashOn style={{ fontSize: '1.5rem', color: '#ff4d4d' }} />
+                            </div>
+                            <div style={{ margin: '8px 0' }}>
+                                <strong style={{ fontSize: '1.1rem', color: '#710100', display: 'block' }}>Atendimento Balcão</strong>
+                                <span style={{ fontSize: '0.75rem', color: '#8c7a7a' }}>Venda rápida / balcão</span>
+                            </div>
+                            <button onClick={() => navigate('/atendimento-balcao')} style={{ width: '100%', padding: '8px', border: '1px solid #ffcccc', borderRadius: '8px', backgroundColor: '#ffffff', color: '#ff4d4d', fontWeight: 'bold', cursor: 'pointer' }}>Abrir Balcão</button>
+                        </div>
+
+                        {/* MESAS */}
+                        {mesas.map((mesa) => (
+                            <div key={mesa.numeroMesa} className="stat-box" style={{ padding: '20px 15px', textAlign: 'center', border: '1px solid #f0e6e6', borderRadius: '12px', background: '#ffffff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', minHeight: '220px' }}>
+                                <div style={{ width: '46px', height: '46px', borderRadius: '50%', backgroundColor: mesa.aberta ? '#fdf2f2' : '#e6f7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                                    <MdTableRestaurant style={{ fontSize: '1.6rem', color: mesa.aberta ? '#710100' : '#28a745' }} />
+                                </div>
+                                <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                    <strong style={{ fontSize: '1.1rem', color: '#3c1010' }}>Mesa {String(mesa.numeroMesa).padStart(2, '0')}</strong>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: mesa.aberta ? '#710100' : '#28a745' }}>{mesa.aberta ? `${mesa.comandas.length} Comanda(s)` : 'Livre'}</span>
+                                    {mesa.aberta && <span style={{ fontWeight: 'bold', color: '#710100', fontSize: '0.95rem', marginTop: '5px' }}>Mesa: R$ {mesa.valorTotalMesa.toFixed(2).replace('.', ',')}</span>}
+                                </div>
+                                <button
+                                    onClick={() => handleAbrirMesaOuComanda(mesa)}
+                                    style={{ width: '100%', padding: '8px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', border: mesa.aberta ? '1px solid #710100' : '1px solid #28a745', backgroundColor: mesa.aberta ? '#fffcfc' : '#f9fdfa', color: mesa.aberta ? '#710100' : '#28a745' }}
+                                >
+                                    {mesa.aberta ? 'Ver Comandas' : 'Abrir Mesa'}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* MODAL DETALHE DAS COMANDAS */}
+                    {isModalAberto && mesaSelecionada && (
+                        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(113, 1, 0, 0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 999, backdropFilter: 'blur(3px)' }}>
+                            <div className="report-container" style={{ backgroundColor: '#ffffff', padding: '25px', width: '580px', borderRadius: '15px', border: '1px solid #f0e6e6', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #fff1f1', paddingBottom: '12px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#fdf2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <MdTableRestaurant style={{ fontSize: '1.2rem', color: '#710100' }} />
+                                        </div>
+                                        <h2 style={{ color: '#710100', margin: 0, fontFamily: 'Abhaya Libre', fontSize: '24px', fontWeight: 'bold' }}>Atendimento Mesa {String(mesaSelecionada.numeroMesa).padStart(2, '0')}</h2>
+                                    </div>
+                                    <button onClick={fecharModalLimpo} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: '#6c757d' }}>&times;</button>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', borderBottom: '1px solid #eee' }}>
+                                    {mesaSelecionada.comandas.map(c => (
+                                        <button key={c.id} onClick={() => { setComandaAtivaId(c.id); setRascunhoItens([]); }} style={{ padding: '8px 15px', border: '1px solid #ced4da', borderRadius: '8px 8px 0 0', cursor: 'pointer', backgroundColor: comandaAtivaId === c.id ? '#710100' : '#f8f9fa', color: comandaAtivaId === c.id ? '#fff' : '#495057', fontWeight: 'bold' }}>{c.codigoIdentificador}</button>
+                                    ))}
+                                    <button onClick={handleAdicionarMaisUmaComanda} style={{ padding: '8px 12px', border: '1px dashed #28a745', borderRadius: '8px', cursor: 'pointer', backgroundColor: '#f4fbf7', color: '#28a745', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}><MdAdd/> Nova Comanda</button>
+                                </div>
+
+                                {comandaAtivaId && mesaSelecionada.comandas.find(c => c.id === comandaAtivaId) && (() => {
+                                    const comandaSelecionada = mesaSelecionada.comandas.find(c => c.id === comandaAtivaId)!;
+                                    return (
+                                        <>
+                                            <div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}><MdRestaurantMenu color="#6c757d"/><strong style={{ fontSize: '13px', color: '#6c757d' }}>Selecione os doces para montar o rascunho:</strong></div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', maxHeight: '110px', overflowY: 'auto', paddingRight: '2px' }}>
+                                                    {cardapio.map(prod => (
+                                                        <button key={prod.id} onClick={() => handleAdicionarItemMesa(prod.id)} className="btn btn-sm" style={{ fontSize: '11px', backgroundColor: '#fffcfc', border: '1px solid #ffcccc', color: '#710100', padding: '10px', borderRadius: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <span>{prod.nome}</span> <strong>R$ {prod.valor.toFixed(2)}</strong>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* RASCUNHO LOCAL DO PEDIDO */}
+                                            <div style={{ borderTop: '1px solid #ffecf0', backgroundColor: '#fffdfd', padding: '10px', borderRadius: '10px', border: '1px dashed #fbbfc5' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#c00000', fontWeight: 'bold', fontSize: '13px' }}>
+                                                        <MdShoppingCart size={16} />
+                                                        <span>Rascunho do Novo Pedido:</span>
+                                                    </div>
+                                                    {rascunhoItens.length > 0 && (
+                                                        <button onClick={handleLancarPedidoCompleto} style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: '#28a745', color: '#fff', border: 'none', padding: '5px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>
+                                                            <MdSend/> Lançar Pedido
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <div style={{ maxHeight: '90px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                    {rascunhoItens.length === 0 ? (
+                                                        <p style={{ fontSize: '12px', color: '#999', margin: '5px 0', fontStyle: 'italic', textAlign: 'center' }}>Nenhum item selecionado no rascunho atual.</p>
+                                                    ) : (
+                                                        rascunhoItens.map(item => (
+                                                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', backgroundColor: '#fff', border: '1px solid #ffebed', borderRadius: '6px' }}>
+                                                                <span style={{ fontSize: '13px', color: '#333' }}>{item.nome}</span>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                    <button onClick={() => handleAlterarQuantidadeRascunho(item.id, 'subtrair')} style={{ width: '20px', height: '24px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>-</button>
+                                                                    <strong style={{ fontSize: '13px' }}>{item.quantidade}</strong>
+                                                                    <button onClick={() => handleAlterarQuantidadeRascunho(item.id, 'somar')} style={{ width: '20px', height: '24px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                                                                </div>
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* CONSUMO JÁ CONFIRMADO NO BANCO */}
+                                            <div style={{ borderTop: '1px solid #fff1f1', paddingTop: '5px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}><MdShoppingBasket color="#6c757d"/><strong style={{ fontSize: '13px', color: '#6c757d' }}>Consumo já Confirmado na Mesa:</strong></div>
+                                                <div style={{ maxHeight: '110px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '5px', paddingRight: '2px' }}>
+                                                    {comandaSelecionada.carrinho.length === 0 ? (
+                                                        <p style={{ textAlign: 'center', fontSize: '13px', color: '#8c7a7a', margin: '10px 0', fontStyle: 'italic' }}>Nenhum pedido faturado para esta comanda ainda.</p>
+                                                    ) : (
+                                                        comandaSelecionada.carrinho.map((item, idx) => (
+                                                            <div key={`${item.id}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: '#fcfcfc', border: '1px solid #f0f0f0', borderRadius: '8px' }}>
+                                                                <span style={{ color: '#555', fontSize: '0.85rem' }}>{item.nome} (R$ {item.preco.toFixed(2)}) x <strong>{item.quantidade}</strong></span>
+                                                                <button onClick={() => handleRemoverItemSalvo(item.id)} style={{ background: 'none', border: 'none', color: '#dc3545', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>Remover</button>
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div style={{ borderTop: '2px solid #fff1f1', paddingTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                    <span style={{ fontSize: '11px', color: '#6c757d', fontWeight: 'bold' }}>TOTAL DA {comandaSelecionada.codigoIdentificador.toUpperCase()}</span>
+                                                    <h3 style={{ fontSize: '24px', fontWeight: 'bold', color: '#710100', margin: 0, fontFamily: 'Georgia' }}>
+                                                        R$ {comandaSelecionada.valorTotalComanda.toFixed(2).replace('.', ',')}
+                                                    </h3>
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button onClick={fecharModalLimpo} className="status-btn-em-preparo" style={{ backgroundColor: '#f5f5f5', color: '#6c757d', border: '1px solid #ced4da', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>Voltar</button>
+                                                    <button onClick={handleFecharComandaUnica} className="status-btn-pagamento" style={{ padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px' }}><MdReceipt/> Fechar Conta</button>
+                                                </div>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};

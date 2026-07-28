@@ -1,6 +1,7 @@
 package com.projeto.petitrose.models;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -29,7 +30,13 @@ public class Comanda implements Serializable {
     @Column(nullable = false)
     private Boolean aberta = true;
 
-    //uma comanda pode ter vários pedidos
-    @OneToMany(mappedBy = "comanda", cascade = CascadeType.ALL)
+    @Column(nullable = false)
+    private BigDecimal valorTotal = BigDecimal.ZERO; 
+
+    @Enumerated(EnumType.STRING)
+    private MetodoPagamento metodoPagamento;
+
+    //uma comanda com varios pedidos
+    @OneToMany(mappedBy = "comanda", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<Pedido> pedidos;
 }

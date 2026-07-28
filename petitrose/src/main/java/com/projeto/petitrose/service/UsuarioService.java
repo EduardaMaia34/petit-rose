@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.projeto.petitrose.dto.UsuarioResponseDTO;
@@ -16,36 +17,36 @@ import com.projeto.petitrose.models.Usuario;
 import com.projeto.petitrose.repositories.UsuarioRepository;
 
 @Service
-public class UsuarioService implements UserDetailsService{
+public class UsuarioService implements UserDetailsService {
+
     @Autowired
     private UsuarioRepository repository;
 
-    //autenticacao
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        UserDetails usuario = repository.findByEmail(email);
+    public UserDetails loadUserByUsername(String user) throws UsernameNotFoundException {
+        Usuario usuario = repository.findByUser(user);
         if (usuario == null) {
-            throw new UsernameNotFoundException("Usuário não encontrado com o email informado.");
+            throw new UsernameNotFoundException("Usuário não encontrado com o login informado.");
         }
         return usuario;
     }
 
-    //listar usuarios
     public List<UsuarioResponseDTO> listarTodos(){
         return repository.findAll()
-        .stream()
-        .map(UsuarioResponseDTO::new)
-        .collect(Collectors.toList());
+                .stream()
+                .map(UsuarioResponseDTO::new)
+                .collect(Collectors.toList());
     }
 
-    //buscar por id
     public UsuarioResponseDTO buscarPorId(UUID id){
         Usuario usuario = repository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Usuario nao encontrado"));
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
         return new UsuarioResponseDTO(usuario);
     }
 
-    //atualizar usuario
     public UsuarioResponseDTO atualizar(UUID id, UsuarioUpdateDTO dados) {
         Usuario usuario = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado!"));
@@ -53,24 +54,28 @@ public class UsuarioService implements UserDetailsService{
         if (dados.nome() != null) {
             usuario.setNome(dados.nome());
         }
-        
-        if (dados.email() != null) {
-            var usuarioExistente = repository.findByEmail(dados.email());
-            if (usuarioExistente != null && !usuario.getEmail().equals(dados.email())) {
-                throw new RuntimeException("Este email já está em uso por outro usuário.");
+
+        if (dados.user() != null) {
+            Usuario usuarioExistente = repository.findByUser(dados.user());
+            if (usuarioExistente != null && !usuario.getId().equals(usuarioExistente.getId())) {
+                throw new RuntimeException("Este nome de usuário já está em uso.");
             }
-            usuario.setEmail(dados.email());
+            usuario.setUser(dados.user());
         }
 
         if (dados.gerente() != null) {
             usuario.setGerente(dados.gerente());
         }
 
+        // 🔥 Agora compila perfeitamente porque injetamos o passwordEncoder acima!
+        if (dados.senha() != null && !dados.senha().trim().isEmpty()) {
+            usuario.setSenha(passwordEncoder.encode(dados.senha()));
+        }
+
         Usuario usuarioAtualizado = repository.save(usuario);
         return new UsuarioResponseDTO(usuarioAtualizado);
     }
 
-    // deletar usuário
     public void deletar(UUID id) {
         Usuario usuario = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado!"));
